@@ -10,7 +10,7 @@ public class BeatsStudio3 extends SinglePods {
 
     @Override
     public int getDrawable() {
-        return getPod().isConnected() ? R.drawable.beatsstudio3 : R.drawable.beatsstudio3_disconnected;
+        return getPod().isConnected() ? R.drawable.podmax : R.drawable.podmax_disconnected;
     }
 
     @Override

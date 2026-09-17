@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp"
+    android:viewportWidth="96" android:viewportHeight="96">
+    <!-- 왼쪽 유닛: 안쪽에서 본 시점 (노즐이 안쪽=오른쪽을 향함) -->
+    <!-- 스템: 아래 바깥(왼쪽)으로 -->
+    <path
+        android:fillColor="#F7F7FA"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M30,46 L44,46 L38,84 A7,7 0 0,1 24,83 Z" />
+    <!-- 유닛 본체 -->
+    <path
+        android:fillColor="#F7F7FA"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M13,32 a23,23 0 1,1 46,0 a23,23 0 1,1 -46,0 Z" />
+    <!-- 스피커 노즐: 오른쪽으로 돌출 -->
+    <path
+        android:fillColor="#EDEDF0"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M52,22 L68,22 A9,9 0 0,1 77,31 L77,37 A9,9 0 0,1 68,46 L52,46 Z" />
+    <path
+        android:fillColor="#B4B4BA"
+        android:pathData="M67,34 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z" />
+</vector>

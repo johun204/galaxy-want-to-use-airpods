@@ -73,7 +73,6 @@
             android:layout_height="@dimen/noti_status_big_item_height"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="6dp"
-            android:scaleX="-1"
             android:src="@drawable/pod" />
 
         <ImageView

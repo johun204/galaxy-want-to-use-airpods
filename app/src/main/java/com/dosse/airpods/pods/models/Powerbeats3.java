@@ -10,7 +10,7 @@ public class Powerbeats3 extends SinglePods {
 
     @Override
     public int getDrawable() {
-        return getPod().isConnected() ? R.drawable.powerbeats3 : R.drawable.powerbeats3_disconnected;
+        return getPod().isConnected() ? R.drawable.pod : R.drawable.pod_disconnected;
     }
 
     @Override

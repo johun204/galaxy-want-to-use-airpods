@@ -1,90 +1,53 @@
-<p align="center"><img src="fastlane/metadata/android/en-US/images/icon.png" width="150"></p> 
-<h1 align="center"><b>OpenPods</b></h1>
-<h4 align="center">The Free and Open Source app for monitoring your AirPods on Android</h4>
+<h1 align="center">galaxy-want-to-use-airpods</h1>
+<p align="center">갤럭시에서 에어팟을 쓰기 위한 개인용 앱 — <a href="https://github.com/adolfintel/OpenPods">OpenPods</a> 포크</p>
 <p align="center">
-	<a href="https://github.com/adolfintel/OpenPods/releases">
-		<img src="https://img.shields.io/github/release/adolfintel/OpenPods.svg?color=blueviolet" alt="GitHub release">
-	</a>
-	<a href="https://www.gnu.org/licenses/gpl-3.0">
-		<img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPLv3">
-	</a>
+	<a href="https://www.gnu.org/licenses/gpl-3.0"><img src="https://img.shields.io/badge/License-GPL%20v3-blue.svg" alt="License: GPLv3"></a>
 	<img alt="Minimum SDK" src="https://img.shields.io/badge/API-26%2B-green">
 </p>
-<p align="center">
-	<a href="https://f-droid.org/packages/com.dosse.airpods">
-		<img src="assets/get-it-on-fdroid.png" alt="Get it on F-Droid" height="80">
-	</a>
-	<a href="https://downloads.fdossena.com/geth.php?r=openpods-apk">
-		<img src="assets/get-it-on-openpods.png" alt="Get it on OpenPods" height="80">
-	</a>
-</p>
 
-## Screenshots
+개인 사용 목적의 포크입니다. **배터리 소모 최소화**가 최우선이고, 나머지는 갤럭시 루틴으로 필요할 때만 불러 쓰는 구조입니다.
 
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/screen1.png"
-    alt="Big notification"
-    width="200">](fastlane/metadata/android/en-US/images/phoneScreenshots/screen1.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/screen2.png"
-    alt="Small notification"
-    width="200">](fastlane/metadata/android/en-US/images/phoneScreenshots/screen2.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/screen3.png"
-    alt="Setup screen"
-    width="200">](fastlane/metadata/android/en-US/images/phoneScreenshots/screen3.png)
-[<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/screen4.png"
-    alt="Home screen"
-    width="200">](fastlane/metadata/android/en-US/images/phoneScreenshots/screen4.png)
-	
-## Features
+## 주요 기능
 
-* Shows a notification with AirPods status when they are connected
-* Respects your privacy
-* Free and Open Source software
-* Supports Dark Theme
+### 다이나믹 아일랜드
+에어팟이 연결되면(또는 바로가기를 실행하면) 화면 상단에 에어팟 그림 + 좌/우/케이스 배터리가 담긴 검은 알약이 약 5초간 떴다가 사라집니다. 탭하면 앱이 열립니다.
+`설정 > 다른 앱 위에 표시` 권한이 필요하며, 앱 첫 실행 시 한 번 안내합니다.
 
-## Supported devices
+### 온디맨드 모드 (기본 켜짐)
+백그라운드 상주를 없앤 모드입니다.
 
-* Apple AirPods 1st gen
-* Apple AirPods 2nd gen
-* Apple AirPods 3rd gen
-* Apple AirPods Pro
-* Apple AirPods Pro 2
-* Apple AirPods Pro 3
-* Apple AirPods Max
-* Beats X
-* Beats Flex
-* Beats Solo 3
-* Beats Studio 3
-* Powerbeats 3
-* Powerbeats Pro
+- 에어팟 연결 → 서비스가 몇 초 뜸 → 알림/아일랜드 1회 표시 → **서비스 완전 종료**
+- 이후 배터리는 재연결 / 바로가기(갤럭시 루틴) / 앱·위젯 열 때만 다시 읽습니다
+- 상주 알림과 주기적 스캔이 동작하지 않으므로 대기 소모가 사실상 0입니다
+- 마지막으로 읽은 배터리 값은 위젯과 앱 화면에 그대로 남습니다
 
-## DO NOT REUPLOAD TO GOOGLE PLAY
-**This app violates Google Play policies and is designed to break if you try to fix that unless you really know what you're doing.**<br />
-Legal actions can and will be taken when uploading a compiled version to the Google Play Store that does not comply with the terms and conditions of the app's license. As a result, you may no longer be able to publish apps to the Google Play Store. This app is not intended to be uploaded to the Google Play Store. The developer is legally allowed to demand compensation.
+끄면 기존 동작(상주 알림 + 듀티 사이클 스캔)으로 돌아갑니다.
 
-This paragraph was added due to multiple license violations found on the Google Play Store. If you're not sure whether you're allowed to distribute your modified version, please contact the developer.
+### 갤럭시 루틴 연동 (앱 바로가기)
+홈 화면에서 앱 아이콘을 꾹 누르면 나오는 두 개의 바로가기입니다. 갤럭시(빅스비) 루틴의 **앱 열기 → 바로가기** 에서 그대로 선택할 수 있습니다.
 
-## Donate
-<a href="https://www.paypal.me/sineisochronic"><img src="assets/donate-with-paypal.png" alt="Donate with PayPal" height="80"></a>
+| 바로가기 | 동작 |
+|---|---|
+| 배터리 아일랜드 | 상단 아일랜드로 배터리 표시 |
+| 배터리 알림 | 알림으로 배터리 표시 |
 
-## License
-[![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](https://www.gnu.org/licenses/gpl-3.0.en.html)  
+예: *이어폰 연결됨* → *배터리 아일랜드*, 또는 *운동 시작* → *배터리 알림*.
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+### 그 밖의 포크 변경점
+- BLE 비콘 + AACP(L2CAP 제어 채널) 양쪽에서 배터리 수신, 제어 채널 값 우선
+- 노이즈 컨트롤 / 귀 감지 등 에어팟 설정 제어
+- 배터리 링이 그려진 일러스트, 위젯 3종(1x1 / 2x2 / 4x1), 내 에어팟 찾기(신호 세기)
+- 듀티 사이클 스캔, 화면 꺼짐/잠금 시 스캔 절전, 갱신 주기 선택(5초~5분)
+- 한국어 UI
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+## 설치
+[Releases](../../releases) 에서 APK를 받아 설치하세요. 디버그 키로 서명된 사이드로드용 빌드입니다.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+## 빌드
+```
+./gradlew assembleRelease
+```
+`local.properties` 에 `sdk.dir` 만 잡혀 있으면 됩니다. (JDK 17, compileSdk 36)
 
-&nbsp;
-&nbsp;
-
-Copyright (C) 2019-2022 Federico Dossena
-
-AirPods is a trademark of Apple inc.
+## 라이선스
+GPLv3. 원작 [OpenPods](https://github.com/adolfintel/OpenPods) — Federico Dossena, Itai Levin.

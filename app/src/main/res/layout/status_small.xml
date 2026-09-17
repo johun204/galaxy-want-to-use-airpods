@@ -58,7 +58,6 @@
             android:id="@+id/rightPodImg"
             android:layout_width="@dimen/noti_status_small_pod_width"
             android:layout_height="@dimen/noti_status_small_item_height"
-            android:scaleX="-1"
             android:src="@drawable/pod" />
 
         <TextView

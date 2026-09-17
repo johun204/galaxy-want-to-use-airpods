@@ -10,12 +10,15 @@ android {
         applicationId "com.dosse.airpods"
         minSdk 26
         targetSdk 36
-        versionCode 24
-        versionName '1.11'
+        versionCode 25
+        versionName '1.12'
     }
 
     buildTypes {
         release {
+            // 개인 사이드로드용: 디버그 키로 서명해 바로 설치 가능하게 함.
+            // ponytail: 디버그 키 서명. Play 배포나 고정 서명 신원이 필요해지면 별도 keystore 생성.
+            signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

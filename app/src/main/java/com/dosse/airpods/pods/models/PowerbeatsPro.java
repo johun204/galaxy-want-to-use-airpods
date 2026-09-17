@@ -10,17 +10,17 @@ public class PowerbeatsPro extends RegularPods {
 
     @Override
     public int getLeftDrawable() {
-        return getPod(LEFT).isConnected() ? R.drawable.powerbeatspro : R.drawable.powerbeatspro_disconnected;
+        return getPod(LEFT).isConnected() ? R.drawable.pod_left : R.drawable.pod_left_disconnected;
     }
 
     @Override
     public int getRightDrawable() {
-        return getPod(RIGHT).isConnected() ? R.drawable.powerbeatspro : R.drawable.powerbeatspro_disconnected;
+        return getPod(RIGHT).isConnected() ? R.drawable.pod_right : R.drawable.pod_right_disconnected;
     }
 
     @Override
     public int getCaseDrawable() {
-        return getPod(CASE).isConnected() ? R.drawable.powerbeatspro_case : R.drawable.powerbeatspro_case_disconnected;
+        return getPod(CASE).isConnected() ? R.drawable.pod_case : R.drawable.pod_case_disconnected;
     }
 
     @Override

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 홈 화면 아이콘 꾹 누르기 바로가기. 갤럭시 루틴의 "앱 바로가기 실행"에서도 그대로 보인다. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="island"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_island"
+        android:shortcutLongLabel="@string/shortcut_island_long">
+        <intent
+            android:action="com.dosse.airpods.SHOW_ISLAND"
+            android:targetClass="com.dosse.airpods.ui.ShortcutActivity"
+            android:targetPackage="com.dosse.airpods" />
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="alert"
+        android:enabled="true"
+        android:icon="@drawable/ic_notification"
+        android:shortcutShortLabel="@string/shortcut_alert"
+        android:shortcutLongLabel="@string/shortcut_alert_long">
+        <intent
+            android:action="com.dosse.airpods.SHOW_ALERT"
+            android:targetClass="com.dosse.airpods.ui.ShortcutActivity"
+            android:targetPackage="com.dosse.airpods" />
+    </shortcut>
+
+</shortcuts>

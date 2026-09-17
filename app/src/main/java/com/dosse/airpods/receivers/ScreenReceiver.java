@@ -8,17 +8,18 @@ import android.content.IntentFilter;
 import java.util.Objects;
 
 public abstract class ScreenReceiver extends BroadcastReceiver {
-    public abstract void onStart();
+    public abstract void onStart();      // 화면 켜짐
 
-    public abstract void onStop();
+    public abstract void onStop();       // 화면 꺼짐
+
+    public abstract void onUnlock();     // 잠금 해제 (USER_PRESENT)
 
     public static IntentFilter buildFilter() {
-        IntentFilter screenIntentFilter = new IntentFilter();
-
-        screenIntentFilter.addAction(Intent.ACTION_SCREEN_ON);
-        screenIntentFilter.addAction(Intent.ACTION_SCREEN_OFF);
-
-        return screenIntentFilter;
+        IntentFilter f = new IntentFilter();
+        f.addAction(Intent.ACTION_SCREEN_ON);
+        f.addAction(Intent.ACTION_SCREEN_OFF);
+        f.addAction(Intent.ACTION_USER_PRESENT);
+        return f;
     }
 
     @Override
@@ -29,6 +30,9 @@ public abstract class ScreenReceiver extends BroadcastReceiver {
                 break;
             case Intent.ACTION_SCREEN_ON:
                 onStart();
+                break;
+            case Intent.ACTION_USER_PRESENT:
+                onUnlock();
                 break;
         }
     }

@@ -3,6 +3,8 @@ package com.dosse.airpods.receivers;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.dosse.airpods.pods.PodsService;
 
@@ -27,11 +29,8 @@ public class StartupReceiver extends BroadcastReceiver {
     }
 
     public static void restartPodsService(Context context) {
-        context.stopService(new Intent(context, PodsService.class));
-        try {
-            Thread.sleep(500);
-        } catch (Throwable ignored) {
-        }
-        startPodsService(context);
+        Context app = context.getApplicationContext();
+        app.stopService(new Intent(app, PodsService.class));
+        new Handler(Looper.getMainLooper()).postDelayed(() -> startPodsService(app), 600);
     }
 }

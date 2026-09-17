@@ -3,6 +3,7 @@ package com.dosse.airpods.pods;
 import com.dosse.airpods.pods.models.AirPods1;
 import com.dosse.airpods.pods.models.AirPods2;
 import com.dosse.airpods.pods.models.AirPods3;
+import com.dosse.airpods.pods.models.AirPods4;
 import com.dosse.airpods.pods.models.AirPodsMax;
 import com.dosse.airpods.pods.models.AirPodsPro;
 import com.dosse.airpods.pods.models.AirPodsPro2;
@@ -15,6 +16,7 @@ import com.dosse.airpods.pods.models.IPods;
 import com.dosse.airpods.pods.models.Powerbeats3;
 import com.dosse.airpods.pods.models.PowerbeatsPro;
 import com.dosse.airpods.pods.models.RegularPods;
+import com.dosse.airpods.utils.Logger;
 
 /**
  * Decoding the beacon:
@@ -69,38 +71,32 @@ public class PodsStatus {
         Pod casePod = new Pod(caseStatus, chargeCase, false);
         Pod singlePod = new Pod(singleStatus, chargeSingle, false);
 
-        char idSingle = status.charAt(7); // We don't know the full ID for all devices
+        // idFull = 모델 ID (Apple product id의 리틀엔디안 hex). 예: 0x2013 -> "1320"
+        // 예전엔 idSingle(한 글자)로도 매칭했는데, AirPods 4(0x2019 -> "1920")가
+        // Beats Studio 3의 '9' 매칭에 걸려 오인식됐다. 이제 idFull 전체로만 판별한다.
         String idFull = status.substring(6, 10);
+        Logger.debug("Model id: " + idFull); // 디버그 빌드에서 기기별 ID 확인용 (adb logcat -s AirPods)
 
-        // Detect which model
-        if ("0220".equals(idFull)) {
-            mPods = new AirPods1(leftPod, rightPod, casePod); // Airpods 1st gen
-        } else if ("0F20".equals(idFull)) {
-            mPods = new AirPods2(leftPod, rightPod, casePod); // Airpods 2nd gen
-        } else if ("1320".equals(idFull)) {
-            mPods = new AirPods3(leftPod, rightPod, casePod); // Airpods 3rd gen
-        } else if ("0E20".equals(idFull)) {
-            mPods = new AirPodsPro(leftPod, rightPod, casePod); // Airpods Pro
-        } else if ("1420".equals(idFull) || "2420".equals(idFull)) {
-            mPods = new AirPodsPro2(leftPod, rightPod, casePod); // Airpods Pro 2
-        } else if ("2720".equals(idFull)) {
-            mPods = new AirPodsPro3(leftPod, rightPod, casePod); // Airpods Pro 3
-        } else if ('A' == idSingle) {
-            mPods = new AirPodsMax(singlePod); // Airpods Max
-        } else if ('B' == idSingle) {
-            mPods = new PowerbeatsPro(leftPod, rightPod, casePod); // Powerbeats Pro
-        } else if ("0520".equals(idFull)) {
-            mPods = new BeatsX(singlePod); // Beats X
-        } else if ("1020".equals(idFull)) {
-            mPods = new BeatsFlex(singlePod); // Beats Flex
-        } else if ("0620".equals(idFull)) {
-            mPods = new BeatsSolo3(singlePod); // Beats Solo 3
-        } else if ('9' == idSingle) {
-            mPods = new BeatsStudio3(singlePod); // Beats Studio 3
-        } else if ("0320".equals(idFull)) {
-            mPods = new Powerbeats3(singlePod); // Powerbeats 3
-        } else {
-            mPods = new RegularPods(leftPod, rightPod, casePod); // Unknown
+        switch (idFull) {
+            case "0220": mPods = new AirPods1(leftPod, rightPod, casePod); break;       // AirPods 1세대
+            case "0F20": mPods = new AirPods2(leftPod, rightPod, casePod); break;       // AirPods 2세대
+            case "1320": mPods = new AirPods3(leftPod, rightPod, casePod); break;       // AirPods 3세대
+            case "1920":                                                                // AirPods 4 (0x2019)
+            case "1A20":                                                                // AirPods 4 ANC (0x201A)
+            case "1B20": mPods = new AirPods4(leftPod, rightPod, casePod); break;       // AirPods 4 ANC (0x201B)
+            case "0E20": mPods = new AirPodsPro(leftPod, rightPod, casePod); break;     // AirPods Pro
+            case "1420":
+            case "2420": mPods = new AirPodsPro2(leftPod, rightPod, casePod); break;    // AirPods Pro 2
+            case "2720": mPods = new AirPodsPro3(leftPod, rightPod, casePod); break;    // AirPods Pro 3
+            case "0A20": mPods = new AirPodsMax(singlePod); break;                      // AirPods Max (0x200A)
+            case "0B20": mPods = new PowerbeatsPro(leftPod, rightPod, casePod); break;  // Powerbeats Pro (0x200B)
+            case "0520": mPods = new BeatsX(singlePod); break;                          // Beats X
+            case "1020": mPods = new BeatsFlex(singlePod); break;                       // Beats Flex
+            case "0620": mPods = new BeatsSolo3(singlePod); break;                      // Beats Solo 3
+            case "0720":
+            case "0920": mPods = new BeatsStudio3(singlePod); break;                    // Beats Studio 3 (0x2007/0x2009)
+            case "0320": mPods = new Powerbeats3(singlePod); break;                     // Powerbeats 3
+            default:     mPods = new RegularPods(leftPod, rightPod, casePod); break;    // 미상 -> 일반 AirPods 취급
         }
     }
 

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 다이나믹 아일랜드 배경: 검은 알약 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F0000000" />
+    <corners android:radius="28dp" />
+</shape>

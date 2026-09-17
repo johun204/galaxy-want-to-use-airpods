@@ -32,7 +32,7 @@ public abstract class PodsStatusScanCallback extends ScanCallback {
 
     private final List<ScanResult> mRecentBeacons = new ArrayList<>();
 
-    public abstract void onStatus(PodsStatus status);
+    public abstract void onStatus(PodsStatus status, int rssi);
 
     public static List<ScanFilter> getScanFilters() {
         byte[] manufacturerData = new byte[AIRPODS_DATA_LENGTH];
@@ -77,7 +77,7 @@ public abstract class PodsStatusScanCallback extends ScanCallback {
             }
 
             PodsStatus status = new PodsStatus(decodeResult(result));
-            onStatus(status);
+            onStatus(status, result.getRssi());
         } catch (Throwable t) {
             Logger.error(t);
         }

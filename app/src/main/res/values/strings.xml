@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">OpenPods</string>
+    <string name="app_name" translatable="false">갤럭시도 에어팟을 쓰고싶어</string>
 
     <string name="bg_noti_channel" tools:ignore="MissingTranslation">Background Notification</string>
-    <string name="bg_noti_title" tools:ignore="MissingTranslation">Running in the background</string>
+    <string name="bg_noti_title">AirPods connected</string>
     <string name="bg_noti_text" tools:ignore="MissingTranslation">Click to open notification settings</string>
 
     <string name="intro_title">This app lets you check the status of your AirPods on any Android device</string>
@@ -48,6 +48,87 @@
     <string name="restart" tools:ignore="MissingTranslation">Restart Service</string>
     <string name="restart_desc" tools:ignore="MissingTranslation">Do this if the notification is not showing</string>
 
+    <string name="feature_category">Features</string>
+    <string name="battery_category">Battery</string>
+    <string name="general_category">General</string>
+
+    <string name="perm_warning">Some permissions are missing, so battery detection and notifications may not work. Tap to grant.</string>
+    <string name="perm_warning_btn">Grant permissions</string>
+
+    <string name="pref_scan_saver">Scan saver while screen off / locked</string>
+    <string name="pref_scan_saver_desc">While the screen is off or on the lock screen, battery-refresh scans are skipped entirely. This takes priority over the refresh interval below. The moment you unlock, if more time has passed than the refresh interval, the battery refreshes right away.</string>
+    <string name="pref_battery_refresh">Battery refresh interval</string>
+    <string name="pref_battery_refresh_dialog">While the app is open the battery is scanned continuously. When it is closed, it scans briefly on this interval instead. Between scans the last known value is shown. Turning the screen on or unlocking also triggers a quick refresh; if "scan saver" above is on, the interval is ignored while the screen is off or locked.\n\n⚠ Intervals under 1 minute keep Bluetooth scanning almost constantly and noticeably increase phone battery drain.</string>
+    <string name="refresh_5s">Every 5 seconds  ⚠</string>
+    <string name="refresh_15s">Every 15 seconds  ⚠</string>
+    <string name="refresh_30s">Every 30 seconds  ⚠</string>
+    <string name="refresh_1min">Every 1 minute</string>
+    <string name="refresh_3min">Every 3 minutes</string>
+    <string name="refresh_5min">Every 5 minutes</string>
+    <string name="pref_fast_scan">Fast scan right after connecting</string>
+    <string name="pref_fast_scan_desc">During the scan window, runs at full speed for the first 15 seconds so battery and in-ear info arrive within a second. Turn off to avoid that brief extra power use; the info then appears a few seconds later.</string>
+    <string name="pref_aacp">Hardware control channel</string>
+    <string name="pref_aacp_desc">Keeps a separate control link (L2CAP) to the AirPods so noise control, ear detection, conversation awareness and other settings can be read and changed. If you only need the battery display, turn this off to save the power and connection overhead of that always-on link. The items on the "AirPods settings" screen will then be hidden.</string>
+    <string name="pref_aacp_battery">Read battery over the control channel</string>
+    <string name="pref_aacp_battery_desc">The default battery display reads the Bluetooth advertisement (beacon) the AirPods broadcast nearby. That beacon carries no device identifier and its MAC address keeps rotating, so if someone next to you is also using AirPods there is no way to be completely sure which reading is yours, and when the screen is off and scan saver kicks in the value arrives late.\n\nWith this on, whenever the "Hardware control channel" above is connected the battery is requested directly over that channel. The channel is established only with the exact AirPods paired to this phone, so readings can never be mixed up, and left/right/case levels come through even while Bluetooth scanning is off.\n\nOn devices where the control channel does not connect (unsupported model, failed link) it automatically falls back to the beacon method. Requires the "Hardware control channel" above to be on.</string>
+    <string name="notif_persistent">Battery detail in notification</string>
+    <string name="notif_persistent_desc">Off: show a minimal notification instead of L / R / case detail</string>
+    <string name="notif_wear">Battery alert when worn</string>
+    <string name="notif_wear_desc">Show a notification each time you put the AirPods in</string>
+    <string name="pref_wear_sound">Alert sound</string>
+    <string name="pref_wear_sound_desc">Play a sound with the battery alert.</string>
+    <string name="pref_wear_vibrate">Alert vibration</string>
+    <string name="pref_wear_vibrate_desc">Vibrate with the battery alert.</string>
+    <string name="wear_channel">Battery alert</string>
+    <string name="wear_alert_title">AirPods connected</string>
+    <string name="pod_left">L</string>
+    <string name="pod_right">R</string>
+    <string name="pod_case">Case</string>
+    <string name="widget_label">AirPods battery</string>
+    <string name="main_battery_title">AirPods battery</string>
+    <string name="main_not_connected">Not connected</string>
+    <string name="updated_at">Updated %1$s</string>
+
+    <string name="noise_control">Noise control</string>
+    <string name="anc_off">Off</string>
+    <string name="anc_on">Noise Cancellation</string>
+    <string name="anc_transparency">Transparency</string>
+    <string name="anc_adaptive">Adaptive</string>
+    <string name="ear_detection">Automatic ear detection</string>
+
+    <string name="widget_label_2x2">AirPods battery (2x2)</string>
+    <string name="widget_label_4x1">AirPods battery (4x1)</string>
+
+    <string name="device_settings">AirPods settings</string>
+    <string name="rename_label">Name</string>
+    <string name="save">Save</string>
+    <string name="saved">Saved</string>
+    <string name="conversation_detect">Conversation awareness</string>
+    <string name="adaptive_volume">Personalized volume</string>
+    <string name="one_bud_anc">Noise control with one AirPod</string>
+    <string name="allow_off_option">Include "Off" in noise control cycle</string>
+    <string name="optimized_charging">Optimized battery charging</string>
+    <string name="automatic_connection">Automatic connection</string>
+    <string name="sleep_detection">Sleep detection</string>
+    <string name="voice_trigger">"Hey Siri"</string>
+    <string name="in_case_tone">Tone when placed in case</string>
+    <string name="volume_swipe">Volume swipe</string>
+    <string name="adaptive_strength">Adaptive audio strength</string>
+    <string name="long_press_modes">Modes cycled by press and hold</string>
+    <string name="long_press_min">Keep at least two modes</string>
+    <string name="press_speed">Press speed</string>
+    <string name="hold_duration">Press-and-hold duration</string>
+    <string name="speed_default">Default</string>
+    <string name="speed_slower">Slower</string>
+    <string name="speed_slowest">Slowest</string>
+
+    <string name="find_my_pods">Find my AirPods</string>
+    <string name="find_my_title">Find my AirPods</string>
+    <string name="find_my_hint">Move around — the meter rises as you get closer. Ringing a sound is not available on Android, so this uses signal strength.</string>
+    <string name="find_my_no_signal">No signal — get closer or open the case</string>
+    <string name="find_my_closer">Getting closer</string>
+    <string name="find_my_farther">Getting farther</string>
+
     <string name="about">About</string>
     <string name="about_dev">Developed by Federico Dossena and Itai Levin</string>
     <string name="fdroid" translatable="false">F-Droid</string>
@@ -59,4 +140,13 @@
     <string name="website_url" translatable="false">https://fdossena.com/?p=openPods/index.frag</string>
     <string name="github_url" translatable="false">https://github.com/adolfintel/OpenPods</string>
     <string name="donate_url" translatable="false">https://paypal.me/sineisochronic</string>
+    <string name="pref_island">Dynamic island</string>
+    <string name="pref_island_desc">When AirPods connect (or when you run the shortcut), a pill with the AirPods and their battery slides in at the top of the screen for a few seconds. Needs the "display over other apps" permission.</string>
+    <string name="pref_island_permission">Grant "display over other apps" permission</string>
+    <string name="pref_on_demand">On-demand mode (no background residency)</string>
+    <string name="pref_on_demand_desc">Once the alert / island has been shown, the app shuts itself down completely instead of staying in the background. Battery is then read again only on reconnect, from a shortcut (Galaxy Routines) or when you open the app or tap the widget. The persistent notification and periodic refresh are disabled while this is on.</string>
+    <string name="shortcut_island">Battery island</string>
+    <string name="shortcut_island_long">Show battery at the top</string>
+    <string name="shortcut_alert">Battery alert</string>
+    <string name="shortcut_alert_long">Show battery as a notification</string>
 </resources>

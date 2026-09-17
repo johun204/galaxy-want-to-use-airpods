@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/padding_main">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/s_disconnected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="@string/main_not_connected"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <!-- 이름 -->
+        <TextView
+            android:id="@+id/s_name_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/rename_label"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:id="@+id/s_name_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
+
+            <EditText
+                android:id="@+id/s_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:inputType="text"
+                android:maxLength="32"
+                android:importantForAutofill="no" />
+
+            <Button
+                android:id="@+id/s_name_save"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save" />
+        </LinearLayout>
+
+        <Switch android:id="@+id/s_ear_detection" style="@style/AirpodsToggle" android:text="@string/ear_detection" />
+        <Switch android:id="@+id/s_conversation" style="@style/AirpodsToggle" android:text="@string/conversation_detect" />
+        <Switch android:id="@+id/s_adaptive_volume" style="@style/AirpodsToggle" android:text="@string/adaptive_volume" />
+        <Switch android:id="@+id/s_one_bud" style="@style/AirpodsToggle" android:text="@string/one_bud_anc" />
+        <Switch android:id="@+id/s_allow_off" style="@style/AirpodsToggle" android:text="@string/allow_off_option" />
+        <Switch android:id="@+id/s_optimized_charge" style="@style/AirpodsToggle" android:text="@string/optimized_charging" />
+        <Switch android:id="@+id/s_auto_connect" style="@style/AirpodsToggle" android:text="@string/automatic_connection" />
+        <Switch android:id="@+id/s_sleep_detect" style="@style/AirpodsToggle" android:text="@string/sleep_detection" />
+        <Switch android:id="@+id/s_voice_trigger" style="@style/AirpodsToggle" android:text="@string/voice_trigger" />
+        <Switch android:id="@+id/s_in_case_tone" style="@style/AirpodsToggle" android:text="@string/in_case_tone" />
+        <Switch android:id="@+id/s_volume_swipe" style="@style/AirpodsToggle" android:text="@string/volume_swipe" />
+
+        <!-- 적응형 오디오 세기 -->
+        <LinearLayout
+            android:id="@+id/s_strength_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/s_strength_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/adaptive_strength" />
+
+            <SeekBar
+                android:id="@+id/s_strength"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100" />
+        </LinearLayout>
+
+        <!-- 길게 눌러 전환할 노이즈 모드 -->
+        <LinearLayout
+            android:id="@+id/s_lp_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/long_press_modes" />
+
+            <CheckBox android:id="@+id/s_lp_anc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/anc_on" />
+            <CheckBox android:id="@+id/s_lp_trans" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/anc_transparency" />
+            <CheckBox android:id="@+id/s_lp_adaptive" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/anc_adaptive" />
+            <CheckBox android:id="@+id/s_lp_off" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/anc_off" />
+        </LinearLayout>
+
+        <!-- 누르는 속도 -->
+        <LinearLayout
+            android:id="@+id/s_press_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/press_speed" />
+            <RadioGroup android:id="@+id/s_press_speed" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <RadioButton android:id="@+id/s_ps_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_default" />
+                <RadioButton android:id="@+id/s_ps_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_slower" />
+                <RadioButton android:id="@+id/s_ps_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_slowest" />
+            </RadioGroup>
+
+            <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="@string/hold_duration" />
+            <RadioGroup android:id="@+id/s_hold_dur" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <RadioButton android:id="@+id/s_hd_0" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_default" />
+                <RadioButton android:id="@+id/s_hd_1" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_slower" />
+                <RadioButton android:id="@+id/s_hd_2" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/speed_slowest" />
+            </RadioGroup>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/s_find"
+            style="?android:attr/buttonBarButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/find_my_pods" />
+
+    </LinearLayout>
+
+</ScrollView>

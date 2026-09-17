@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="battery_refresh_entries">
+        <item>@string/refresh_5s</item>
+        <item>@string/refresh_15s</item>
+        <item>@string/refresh_30s</item>
+        <item>@string/refresh_1min</item>
+        <item>@string/refresh_3min</item>
+        <item>@string/refresh_5min</item>
+    </string-array>
+</resources>

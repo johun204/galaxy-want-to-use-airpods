@@ -12,14 +12,235 @@
         android:orientation="vertical"
         android:paddingTop="32dp">
 
-        <ImageView
+        <LinearLayout
+            android:id="@+id/perm_warning"
             android:layout_width="match_parent"
-            android:layout_height="120dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="#FFF3CD"
+            android:clickable="true"
+            android:focusable="true"
+            android:orientation="vertical"
+            android:padding="12dp"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/perm_warning"
+                android:textColor="#664D03"
+                android:textSize="13sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/perm_warning_btn"
+                android:textColor="#0D6EFD"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/main_battery_title"
+            android:textSize="17sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
-            android:scaleType="fitCenter"
-            android:scaleX="1.1"
-            android:scaleY="1.1"
-            android:src="@drawable/ic_check_dgrey_48dp" />
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/m_left_col"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:id="@+id/m_left_img"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:src="@drawable/pod" />
+
+                    <ImageView
+                        android:id="@+id/m_left_chg"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="bottom|end"
+                        android:src="@drawable/ic_battery_charging_full_green_24dp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/m_left_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/m_right_col"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:id="@+id/m_right_img"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:src="@drawable/pod" />
+
+                    <ImageView
+                        android:id="@+id/m_right_chg"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="bottom|end"
+                        android:src="@drawable/ic_battery_charging_full_green_24dp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/m_right_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.4"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <FrameLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:id="@+id/m_case_img"
+                        android:layout_width="72dp"
+                        android:layout_height="72dp"
+                        android:src="@drawable/pod_case" />
+
+                    <ImageView
+                        android:id="@+id/m_case_chg"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_gravity="bottom|end"
+                        android:src="@drawable/ic_battery_charging_full_green_24dp"
+                        android:visibility="gone" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/m_case_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/m_updated"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:gravity="end"
+            android:textColor="@color/dgrey"
+            android:textSize="11sp" />
+
+        <!-- AACP 제어 (L2CAP 연결됐을 때만 표시) -->
+        <LinearLayout
+            android:id="@+id/m_aacp_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/m_noise_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/noise_control"
+                android:textSize="17sp" />
+
+            <LinearLayout
+                android:id="@+id/m_noise_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/m_anc_off"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/anc_off"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/m_anc_anc"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/anc_on"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/m_anc_trans"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/anc_transparency"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/m_anc_adaptive"
+                    style="?android:attr/buttonBarButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/anc_adaptive"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <Switch
+                android:id="@+id/m_ear_detection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/ear_detection" />
+
+            <Button
+                android:id="@+id/m_aacp_settings"
+                style="?android:attr/buttonBarButtonStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/device_settings" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"

@@ -14,10 +14,11 @@
         android:usesPermissionFlags="neverForLocation"
         tools:targetApi="s" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- 다이나믹 아일랜드(상단 오버레이)용 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <uses-feature
         android:name="android.hardware.bluetooth_le"
@@ -27,6 +28,7 @@
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_descriptor"
         android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
@@ -40,6 +42,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- 아이콘 꾹 누르기 바로가기 (갤럭시 루틴에서 실행 가능) -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <activity
@@ -53,6 +60,33 @@
             android:label="@string/settings"
             android:launchMode="singleTop"
             android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.AirPodsSettingsActivity"
+            android:label="@string/device_settings"
+            android:launchMode="singleTop"
+            android:parentActivityName=".ui.MainActivity" />
+
+        <activity
+            android:name=".ui.FindMyActivity"
+            android:label="@string/find_my_title"
+            android:launchMode="singleTop"
+            android:parentActivityName=".ui.AirPodsSettingsActivity" />
+
+        <!-- 바로가기/루틴 진입점: 화면 없이 서비스에 표시 요청만 전달 -->
+        <activity
+            android:name=".ui.ShortcutActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="com.dosse.airpods.SHOW_ISLAND" />
+                <action android:name="com.dosse.airpods.SHOW_ALERT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <activity android:name=".ui.NoBTActivity" />
 
@@ -75,7 +109,53 @@
             android:name=".pods.PodsService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="location" />
+            android:foregroundServiceType="connectedDevice" />
+
+        <!-- AirPods 연결 시 서비스를 되살림 (평소엔 서비스가 안 돎) -->
+        <receiver
+            android:name=".receivers.AirPodsConnectionReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.bluetooth.device.action.ACL_CONNECTED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".widget.PodsWidget"
+            android:exported="false"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pods_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.PodsWidget2x2"
+            android:exported="false"
+            android:label="@string/widget_label_2x2">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pods_widget_2x2_info" />
+        </receiver>
+
+        <receiver
+            android:name=".widget.PodsWidget4x1"
+            android:exported="false"
+            android:label="@string/widget_label_4x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/pods_widget_4x1_info" />
+        </receiver>
 
     </application>
 

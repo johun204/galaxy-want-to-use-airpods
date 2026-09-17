@@ -1,0 +1,21 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp" android:height="96dp"
+    android:viewportWidth="96" android:viewportHeight="96">
+    <!-- 왼쪽 Pro 유닛: 안쪽에서 본 시점 -->
+    <path
+        android:fillColor="#F7F7FA"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M28,44 L44,44 L38,82 A7,7 0 0,1 24,81 Z" />
+    <path
+        android:fillColor="#F7F7FA"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M12,30 a24,22 0 1,1 48,0 a24,22 0 1,1 -48,0 Z" />
+    <!-- 실리콘 팁: 오른쪽으로 뾰족하게 -->
+    <path
+        android:fillColor="#EDEDF0"
+        android:strokeColor="#C7C7CC"
+        android:strokeWidth="3"
+        android:pathData="M50,18 L64,18 L76,27 A7,7 0 0,1 76,41 L64,50 L50,50 Z" />
+</vector>

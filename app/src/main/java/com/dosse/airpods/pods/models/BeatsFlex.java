@@ -10,7 +10,7 @@ public class BeatsFlex extends SinglePods {
 
     @Override
     public int getDrawable() {
-        return getPod().isConnected() ? R.drawable.beatsflex : R.drawable.beatsflex_disconnected;
+        return getPod().isConnected() ? R.drawable.pod : R.drawable.pod_disconnected;
     }
 
     @Override

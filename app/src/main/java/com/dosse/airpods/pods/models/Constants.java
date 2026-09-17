@@ -4,6 +4,7 @@ public final class Constants {
     static final String MODEL_AIRPODS_GEN1 = "airpods1";
     static final String MODEL_AIRPODS_GEN2 = "airpods2";
     static final String MODEL_AIRPODS_GEN3 = "airpods3";
+    static final String MODEL_AIRPODS_GEN4 = "airpods4";
     static final String MODEL_AIRPODS_PRO = "airpodspro";
     static final String MODEL_AIRPODS_PRO_2 = "airpodspro2";
     static final String MODEL_AIRPODS_PRO_3 = "airpodspro3";

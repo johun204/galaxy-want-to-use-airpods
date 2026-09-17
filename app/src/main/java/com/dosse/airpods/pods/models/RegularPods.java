@@ -35,11 +35,11 @@ public class RegularPods implements IPods {
     }
 
     public int getLeftDrawable() {
-        return getPod(LEFT).isConnected() ? R.drawable.pod : R.drawable.pod_disconnected;
+        return getPod(LEFT).isConnected() ? R.drawable.pod_left : R.drawable.pod_left_disconnected;
     }
 
     public int getRightDrawable() {
-        return getPod(RIGHT).isConnected() ? R.drawable.pod : R.drawable.pod_disconnected;
+        return getPod(RIGHT).isConnected() ? R.drawable.pod_right : R.drawable.pod_right_disconnected;
     }
 
     public int getCaseDrawable() {

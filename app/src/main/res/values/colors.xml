@@ -8,4 +8,9 @@
     <color name="bgColorPrimary"   >#FFF</color>
 
     <color name="dgrey"            >#737373</color>
+
+    <color name="ic_launcher_background">#0A84FF</color>
+
+    <!-- 위젯: 흰색 카드 위 텍스트 -->
+    <color name="widget_text">#1C1C1E</color>
 </resources>

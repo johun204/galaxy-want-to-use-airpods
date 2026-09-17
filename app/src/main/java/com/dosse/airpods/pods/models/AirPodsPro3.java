@@ -10,12 +10,12 @@ public class AirPodsPro3 extends AirPodsPro {
 
     @Override
     public int getLeftDrawable() {
-        return getPod(LEFT).isConnected() ? R.drawable.podpro3 : R.drawable.podpro3_disconnected;
+        return getPod(LEFT).isConnected() ? R.drawable.podpro_left : R.drawable.podpro_left_disconnected;
     }
 
     @Override
     public int getRightDrawable() {
-        return getPod(RIGHT).isConnected() ? R.drawable.podpro3 : R.drawable.podpro3_disconnected;
+        return getPod(RIGHT).isConnected() ? R.drawable.podpro_right : R.drawable.podpro_right_disconnected;
     }
 
     @Override
