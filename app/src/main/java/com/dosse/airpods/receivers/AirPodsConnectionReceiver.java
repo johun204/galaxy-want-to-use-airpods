@@ -7,6 +7,7 @@ import android.content.Intent;
 
 import com.dosse.airpods.pods.PodsService;
 import com.dosse.airpods.utils.Logger;
+import com.dosse.airpods.utils.SharedPreferencesUtils;
 
 /**
  * AirPods가 연결되는 순간 서비스를 되살린다.
@@ -18,6 +19,10 @@ public class AirPodsConnectionReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (!BluetoothDevice.ACTION_ACL_CONNECTED.equals(intent.getAction()))
+            return;
+
+        // 자동 표시를 껐으면 연결돼도 아무 것도 하지 않는다 (루틴/바로가기로만 동작)
+        if (!SharedPreferencesUtils.isAutoOnConnect(context))
             return;
 
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);

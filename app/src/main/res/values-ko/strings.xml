@@ -118,12 +118,21 @@
     <string name="pref_island_permission">다른 앱 위에 표시 권한 허용</string>
     <string name="pref_on_demand">온디맨드 모드 (백그라운드 상주 안 함)</string>
     <string name="pref_on_demand_desc">알림/아일랜드를 한 번 띄운 뒤 앱이 백그라운드에 남지 않고 완전히 종료됩니다. 이후 배터리는 재연결 시, 바로가기(갤럭시 루틴) 실행 시, 앱이나 위젯을 열 때만 다시 읽습니다. 켜져 있는 동안에는 상태 표시 알림과 주기적 갱신이 동작하지 않습니다.</string>
-    <string name="shortcut_island">배터리 아일랜드</string>
-    <string name="shortcut_island_long">상단에 배터리 표시</string>
+    <string name="shortcut_island">배터리 다이나믹 아일랜드</string>
+    <string name="shortcut_island_long">배터리 다이나믹 아일랜드 표시</string>
     <string name="shortcut_alert">배터리 알림</string>
     <string name="shortcut_alert_long">배터리를 알림으로 표시</string>
     <string name="perm_bt_title">근처 기기 권한이 필요합니다</string>
     <string name="perm_bt_msg">근처 기기(블루투스) 권한이 없으면 에어팟 배터리를 전혀 읽을 수 없습니다. 권한을 허용해 주세요.</string>
     <string name="perm_bt_grant">권한 허용</string>
     <string name="perm_bt_settings">권한 > 근처 기기 를 허용해 주세요</string>
+    <string name="pref_island_seconds">아일랜드 표시 시간</string>
+    <string name="island_sec_2">2초</string>
+    <string name="island_sec_3">3초</string>
+    <string name="island_sec_5">5초</string>
+    <string name="island_sec_10">10초</string>
+    <string name="tile_label">에어팟 배터리</string>
+    <string name="toast_not_connected">연결된 에어팟이 없습니다</string>
+    <string name="pref_auto_connect">에어팟 연결 시 자동 표시</string>
+    <string name="pref_auto_connect_desc">갤럭시 루틴이나 바로가기로 직접 띄워 쓴다면 꺼 두세요. 끄면 블루투스 연결 브로드캐스트를 아예 받지 않아 백그라운드에서 앱이 깨어나는 일이 없습니다.</string>
 </resources>

@@ -34,6 +34,22 @@ public class SharedPreferencesUtils {
         return b(c, "island_enabled", true);
     }
 
+    // 에어팟 연결 시 자동으로 알림/아일랜드 표시 (기본 켜짐).
+    // 끄면 연결 브로드캐스트에 아예 반응하지 않는다 — 갤럭시 루틴 등으로 직접 부를 때만 동작.
+    public static boolean isAutoOnConnect(Context c) {
+        return b(c, "auto_on_connect", true);
+    }
+
+    // 아일랜드가 화면에 떠 있는 시간(초). 기본 3초.
+    public static int islandSeconds(Context c) {
+        try {
+            return Integer.parseInt(PreferenceManager.getDefaultSharedPreferences(c)
+                    .getString("island_seconds", "3"));
+        } catch (Exception e) {
+            return 3;
+        }
+    }
+
     // 온디맨드 모드: 표시할 걸 띄운 뒤 서비스를 종료해 백그라운드 상주를 없앰 (기본 켜짐)
     public static boolean isOnDemandEnabled(Context c) {
         return b(c, "on_demand", true);

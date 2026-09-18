@@ -145,12 +145,21 @@
     <string name="pref_island_permission">Grant "display over other apps" permission</string>
     <string name="pref_on_demand">On-demand mode (no background residency)</string>
     <string name="pref_on_demand_desc">Once the alert / island has been shown, the app shuts itself down completely instead of staying in the background. Battery is then read again only on reconnect, from a shortcut (Galaxy Routines) or when you open the app or tap the widget. The persistent notification and periodic refresh are disabled while this is on.</string>
-    <string name="shortcut_island">Battery island</string>
-    <string name="shortcut_island_long">Show battery at the top</string>
+    <string name="shortcut_island">Battery dynamic island</string>
+    <string name="shortcut_island_long">Show the battery dynamic island</string>
     <string name="shortcut_alert">Battery alert</string>
     <string name="shortcut_alert_long">Show battery as a notification</string>
     <string name="perm_bt_title">Nearby devices permission needed</string>
     <string name="perm_bt_msg">Without the "Nearby devices" permission the app cannot read the AirPods battery at all. Please allow it.</string>
     <string name="perm_bt_grant">Allow</string>
     <string name="perm_bt_settings">Allow Nearby devices under Permissions</string>
+    <string name="pref_island_seconds">Island display time</string>
+    <string name="island_sec_2">2 seconds</string>
+    <string name="island_sec_3">3 seconds</string>
+    <string name="island_sec_5">5 seconds</string>
+    <string name="island_sec_10">10 seconds</string>
+    <string name="tile_label">AirPods battery</string>
+    <string name="toast_not_connected">AirPods are not connected</string>
+    <string name="pref_auto_connect">Show automatically when AirPods connect</string>
+    <string name="pref_auto_connect_desc">Turn this off if you trigger the island from Galaxy Routines or a shortcut instead. The app then ignores Bluetooth connection broadcasts entirely, so nothing wakes it up in the background.</string>
 </resources>

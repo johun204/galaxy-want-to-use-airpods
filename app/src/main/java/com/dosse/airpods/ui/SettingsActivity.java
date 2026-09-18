@@ -1,8 +1,10 @@
 package com.dosse.airpods.ui;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.Settings;
 import android.os.Bundle;
@@ -21,6 +23,7 @@ import androidx.preference.PreferenceManager;
 
 import com.dosse.airpods.BuildConfig;
 import com.dosse.airpods.R;
+import com.dosse.airpods.receivers.AirPodsConnectionReceiver;
 import com.dosse.airpods.receivers.StartupReceiver;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -41,6 +44,14 @@ public class SettingsActivity extends AppCompatActivity {
         @Override
         public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
             setPreferencesFromResource(R.xml.preference_screen, rootKey);
+
+            // 자동 표시를 끄면 연결 브로드캐스트 수신 컴포넌트 자체를 꺼서 앱이 깨지 않게 한다
+            Preference auto = getPreference("auto_on_connect");
+            if (auto != null)
+                auto.setOnPreferenceChangeListener((pref, v) -> {
+                    setConnectReceiverEnabled(pref.getContext(), Boolean.TRUE.equals(v));
+                    return true;
+                });
 
             // 아일랜드를 켰는데 오버레이 권한이 없으면 설정 화면으로 보낸다
             Preference island = getPreference("island_enabled");
@@ -76,6 +87,14 @@ public class SettingsActivity extends AppCompatActivity {
             });
 
             getPreference("about").setSummary(String.format("%s v%s", getString(R.string.app_name), BuildConfig.VERSION_NAME));
+        }
+
+        private static void setConnectReceiverEnabled(Context c, boolean on) {
+            c.getPackageManager().setComponentEnabledSetting(
+                    new ComponentName(c, AirPodsConnectionReceiver.class),
+                    on ? PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
+                            : PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                    PackageManager.DONT_KILL_APP);
         }
 
         // 프레임워크 ListPreference 대신 직접 다이얼로그: 설명 + 라디오 선택을 함께 표시

@@ -88,6 +88,18 @@
             </intent-filter>
         </activity>
 
+        <!-- 빠른 설정 타일: 누르면 배터리 다이나믹 아일랜드 표시 -->
+        <service
+            android:name=".ui.PodsTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_notification"
+            android:label="@string/tile_label"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <activity android:name=".ui.NoBTActivity" />
 
         <activity

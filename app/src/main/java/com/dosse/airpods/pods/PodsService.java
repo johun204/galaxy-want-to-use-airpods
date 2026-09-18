@@ -42,6 +42,7 @@ import static com.dosse.airpods.notification.NotificationBuilder.TAG;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.batteryRefreshSeconds;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isAacpBatteryEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isAacpEnabled;
+import static com.dosse.airpods.utils.SharedPreferencesUtils.isAutoOnConnect;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isFastScanOnConnect;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isIslandEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isOnDemandEnabled;
@@ -319,7 +320,6 @@ public class PodsService extends Service {
         }
         mNM.cancel(NOTIFICATION_ID);
         mNM.cancel(WEAR_NOTIFICATION_ID);
-        IslandOverlay.hide(this);
         // 온디맨드 모드에선 연결된 채로 서비스만 내려간다 — 마지막 배터리 값은 위젯/앱에 남겨둔다
         if (!mMaybeConnected)
             PodsSnapshot.last = new PodsSnapshot();
@@ -336,9 +336,11 @@ public class PodsService extends Service {
         startAacp();
         if (!wasConnected) {
             openScanWindow(SETTLE_MS);
-            // 연결당 1회: 설정에 따라 알림 / 아일랜드
-            int what = (isWearAlertEnabled(this) ? SHOW_NOTIF : 0)
-                    | (isIslandEnabled(this) ? SHOW_ISLAND : 0);
+            // 연결당 1회: 설정에 따라 알림 / 아일랜드.
+            // 자동 표시를 껐거나 앱 화면이 떠 있으면 띄우지 않는다 (앱에서 이미 보임)
+            int what = isAutoOnConnect(this) && mAppForeground == 0
+                    ? (isWearAlertEnabled(this) ? SHOW_NOTIF : 0) | (isIslandEnabled(this) ? SHOW_ISLAND : 0)
+                    : 0;
             if (what != 0)
                 requestShow(what);
             else
@@ -357,8 +359,11 @@ public class PodsService extends Service {
     }
 
     private void stopIfIdle() {
-        if (!mMaybeConnected)
-            stopSelf();
+        if (mMaybeConnected)
+            return;
+        if (mShowWhat != 0) // 바로가기/루틴으로 불렀는데 연결된 에어팟이 없음
+            android.widget.Toast.makeText(this, R.string.toast_not_connected, android.widget.Toast.LENGTH_SHORT).show();
+        stopSelf();
     }
 
     // ---------------- 스캔 창 (듀티 사이클) ----------------
@@ -422,8 +427,10 @@ public class PodsService extends Service {
         if (!mMaybeConnected)
             return;
         // 온디맨드 모드는 주기 스캔 자체를 하지 않는다 — 여기서 서비스를 접는다
+        // (아직 띄우지 못한 알림/아일랜드가 있으면 그게 끝난 뒤에 접힌다)
         if (isOnDemandEnabled(this)) {
-            stopSelf();
+            if (!mAlertPending && mShowWhat == 0)
+                stopSelf();
             return;
         }
         // 절전 옵션 + 화면 꺼짐/잠금 → 다음 주기 스캔을 예약하지 않음 (잠금 해제 시 따라잡음)
@@ -566,22 +573,27 @@ public class PodsService extends Service {
     private void requestShow(int what) {
         mShowWhat |= what;
         mAlertDeadline = System.currentTimeMillis() + SETTLE_MS;
-        if (mMaybeConnected && !mScanning)
-            openScanWindow(REFRESH_MS);
         if (!mAlertPending) {
             mAlertPending = true;
-            mHandler.postDelayed(this::fireShow, WEAR_SETTLE_MS);
+            // 이미 값이 있으면 스캔도 대기도 없이 바로 띄운다 (루틴에서 부를 때 즉시 반응 + 스캔 0회)
+            mHandler.postDelayed(this::fireShow, hasBattery() ? 0 : WEAR_SETTLE_MS);
         }
+    }
+
+    private static boolean hasBattery() {
+        PodsSnapshot s = PodsSnapshot.last;
+        return s.available && (s.leftPct >= 0 || s.rightPct >= 0 || s.casePct >= 0);
     }
 
     private void fireShow() {
         mAlertPending = false;
         PodsSnapshot s = PodsSnapshot.last;
-        boolean ready = mMaybeConnected && s.available
-                && (s.leftPct >= 0 || s.rightPct >= 0 || s.casePct >= 0);
+        boolean ready = mMaybeConnected && hasBattery();
         if (!ready) {
             // 아직 연결 확인 전이거나 배터리 값을 못 받음 — 마감 시각 전이면 재시도
             if (System.currentTimeMillis() < mAlertDeadline) {
+                if (mMaybeConnected && !mScanning)
+                    openScanWindow(REFRESH_MS); // 값이 없을 때만 비콘 스캔
                 mAlertPending = true;
                 mHandler.postDelayed(this::fireShow, 2000);
                 return;
@@ -609,7 +621,7 @@ public class PodsService extends Service {
         mHandler.postDelayed(() -> {
             if (isOnDemandEnabled(this) && mAppForeground == 0 && !mAlertPending)
                 stopSelf();
-        }, IslandOverlay.SHOW_MS + 1000);
+        }, IslandOverlay.showMs(this) + 1500);
     }
 
     private String wearBody(PodsSnapshot s) {
@@ -719,10 +731,21 @@ public class PodsService extends Service {
                 mAbR = rp; mAbRc = rc;
                 mAbC = cp; mAbCc = cc;
                 mAacpBatAt = System.currentTimeMillis();
-                mHandler.post(PodsService.this::publish);
+                mHandler.post(() -> {
+                    publish();
+                    endScanEarlyIfAacp();
+                });
             }
         });
         mAacp.start(mDevice);
+    }
+
+    /** 제어 채널에서 정확한 배터리를 받았으면 비콘 스캔을 더 돌릴 이유가 없다. */
+    private void endScanEarlyIfAacp() {
+        if (!mScanning || mAppForeground > 0 || !aacpBatteryUsable())
+            return;
+        mHandler.removeCallbacks(mEndWindow);
+        mHandler.post(mEndWindow);
     }
 
     private void stopAacp() {

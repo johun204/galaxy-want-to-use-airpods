@@ -15,11 +15,30 @@
 
         <SwitchPreference
             android:defaultValue="true"
+            android:key="auto_on_connect"
+            android:summary="@string/pref_auto_connect_desc"
+            android:title="@string/pref_auto_connect"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
+        <SwitchPreference
+            android:defaultValue="true"
             android:key="island_enabled"
             android:summary="@string/pref_island_desc"
             android:title="@string/pref_island"
             app:iconSpaceReserved="false"
             app:singleLineTitle="false" />
+
+        <ListPreference
+            android:defaultValue="3"
+            android:dependency="island_enabled"
+            android:entries="@array/island_seconds_entries"
+            android:entryValues="@array/island_seconds_values"
+            android:key="island_seconds"
+            android:title="@string/pref_island_seconds"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false"
+            app:useSimpleSummaryProvider="true" />
 
         <SwitchPreference
             android:defaultValue="true"
