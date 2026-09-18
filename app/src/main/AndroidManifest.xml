@@ -80,7 +80,7 @@
             android:exported="true"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            android:theme="@android:style/Theme.NoDisplay">
             <intent-filter>
                 <action android:name="com.dosse.airpods.SHOW_ISLAND" />
                 <action android:name="com.dosse.airpods.SHOW_ALERT" />

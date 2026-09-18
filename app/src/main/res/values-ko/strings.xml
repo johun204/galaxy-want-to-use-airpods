@@ -135,4 +135,9 @@
     <string name="toast_not_connected">연결된 에어팟이 없습니다</string>
     <string name="pref_auto_connect">에어팟 연결 시 자동 표시</string>
     <string name="pref_auto_connect_desc">갤럭시 루틴이나 바로가기로 직접 띄워 쓴다면 꺼 두세요. 끄면 블루투스 연결 브로드캐스트를 아예 받지 않아 백그라운드에서 앱이 깨어나는 일이 없습니다.</string>
+    <string name="perm_needs">필요 권한: %1$s</string>
+    <string name="perm_needed">%1$s 권한을 허용해야 켤 수 있습니다</string>
+    <string name="perm_name_notif">알림</string>
+    <string name="perm_name_bt">근처 기기</string>
+    <string name="perm_name_overlay">다른 앱 위에 표시</string>
 </resources>

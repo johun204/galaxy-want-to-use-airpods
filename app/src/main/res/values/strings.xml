@@ -162,4 +162,9 @@
     <string name="toast_not_connected">AirPods are not connected</string>
     <string name="pref_auto_connect">Show automatically when AirPods connect</string>
     <string name="pref_auto_connect_desc">Turn this off if you trigger the island from Galaxy Routines or a shortcut instead. The app then ignores Bluetooth connection broadcasts entirely, so nothing wakes it up in the background.</string>
+    <string name="perm_needs">Requires the %1$s permission</string>
+    <string name="perm_needed">Allow the %1$s permission first</string>
+    <string name="perm_name_notif">Notifications</string>
+    <string name="perm_name_bt">Nearby devices</string>
+    <string name="perm_name_overlay">Display over other apps</string>
 </resources>

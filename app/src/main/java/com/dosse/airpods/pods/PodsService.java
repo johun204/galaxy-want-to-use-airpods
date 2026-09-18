@@ -336,9 +336,8 @@ public class PodsService extends Service {
         startAacp();
         if (!wasConnected) {
             openScanWindow(SETTLE_MS);
-            // 연결당 1회: 설정에 따라 알림 / 아일랜드.
-            // 자동 표시를 껐거나 앱 화면이 떠 있으면 띄우지 않는다 (앱에서 이미 보임)
-            int what = isAutoOnConnect(this) && mAppForeground == 0
+            // 연결당 1회: 설정에 따라 알림 / 아일랜드 (앱을 열어 둔 상태에서도 그대로 띄운다)
+            int what = isAutoOnConnect(this)
                     ? (isWearAlertEnabled(this) ? SHOW_NOTIF : 0) | (isIslandEnabled(this) ? SHOW_ISLAND : 0)
                     : 0;
             if (what != 0)
