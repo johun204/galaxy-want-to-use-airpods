@@ -8,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.Settings;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.widget.LinearLayout;
@@ -29,6 +31,7 @@ import com.dosse.airpods.R;
 import com.dosse.airpods.receivers.AirPodsConnectionReceiver;
 import com.dosse.airpods.receivers.StartupReceiver;
 import com.dosse.airpods.utils.PermissionUtils;
+import com.dosse.airpods.utils.SharedPreferencesUtils;
 
 public class SettingsActivity extends AppCompatActivity {
     @Override
@@ -60,6 +63,12 @@ public class SettingsActivity extends AppCompatActivity {
             gate("aacp_battery", PERM_BT);
             gate("on_demand", PERM_NONE);
 
+            // 원래 요약을 기억해 뒀다가 충돌이 풀리면 되돌린다
+            for (String k : CONFLICTING) {
+                Preference p = getPreference(k);
+                if (p != null && !"battery_refresh".equals(k))
+                    mSummaries.put(k, p.getSummary());
+            }
             Preference refresh = getPreference("battery_refresh");
             updateRefreshSummary(refresh);
             refresh.setOnPreferenceClickListener(pref -> {
@@ -73,6 +82,47 @@ public class SettingsActivity extends AppCompatActivity {
             });
 
             getPreference("about").setSummary(String.format("%s v%s", getString(R.string.app_name), BuildConfig.VERSION_NAME));
+
+            applyConflicts();
+        }
+
+        // ---------------- 설정 충돌 방어 ----------------
+
+        // 온디맨드 모드(상주 없음)와 동시에 쓸 수 없는 항목들 — 주기 갱신·상주 알림 계열
+        private static final String[] CONFLICTING = {"notif_persistent", "scan_saver", "battery_refresh", "fast_scan"};
+
+        private final java.util.HashMap<String, CharSequence> mSummaries = new java.util.HashMap<>();
+
+        /** 충돌하는 설정은 아예 건드리지 못하게 막고, 이유를 요약에 적는다. */
+        private void applyConflicts() {
+            boolean onDemand = SharedPreferencesUtils.isOnDemandEnabled(requireContext());
+            for (String k : CONFLICTING) {
+                Preference p = getPreference(k);
+                if (p == null)
+                    continue;
+                p.setEnabled(!onDemand);
+                if (onDemand)
+                    p.setSummary(getString(R.string.conflict_on_demand));
+                else if (mSummaries.containsKey(k))
+                    p.setSummary(mSummaries.get(k));
+            }
+            if (!onDemand)
+                updateRefreshSummary(getPreference("battery_refresh"));
+
+            // 표시할 항목이 하나도 없는데 자동 표시만 켠 경우
+            Preference auto = getPreference("auto_on_connect");
+            if (auto != null) {
+                boolean nothing = !isOn("island_enabled") && !isOn("notif_wear");
+                auto.setSummary(nothing
+                        ? getString(R.string.warn_nothing_to_show)
+                        : getString(R.string.pref_auto_connect_desc) + "\n"
+                                + getString(R.string.perm_needs, getString(R.string.perm_name_bt)));
+            }
+        }
+
+        private boolean isOn(String key) {
+            Preference p = getPreference(key);
+            return p instanceof SwitchPreference && ((SwitchPreference) p).isChecked();
         }
 
         // ---------------- 권한 게이트 ----------------
@@ -112,6 +162,7 @@ public class SettingsActivity extends AppCompatActivity {
                 if ("auto_on_connect".equals(key))
                     setConnectReceiverEnabled(c, Boolean.TRUE.equals(v));
                 StartupReceiver.restartPodsService(c);
+                new Handler(Looper.getMainLooper()).post(this::applyConflicts); // 저장된 뒤 다시 계산
                 return true;
             });
         }

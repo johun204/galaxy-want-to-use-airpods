@@ -41,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int BT_REQUEST_CODE = 201;
 
+    /** 앱 화면이 떠 있는지 — 바로가기(루틴)가 화면을 뺏었을 때 되돌릴지 판단용 */
+    public static volatile boolean sForeground = false;
+
     private boolean mUpdatingUi = false;
 
     private final BroadcastReceiver mStatusReceiver = new BroadcastReceiver() {
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
         ContextCompat.registerReceiver(this, mStatusReceiver,
                 new IntentFilter(PodsSnapshot.ACTION), ContextCompat.RECEIVER_NOT_EXPORTED);
 
+        sForeground = true;
         PodsService.setAppForeground(this, true); // 앱 열려 있는 동안 연속 스캔
 
         View warn = findViewById(R.id.perm_warning);
@@ -212,6 +216,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
+        sForeground = false;
         PodsService.setAppForeground(this, false);
         try {
             unregisterReceiver(mStatusReceiver);

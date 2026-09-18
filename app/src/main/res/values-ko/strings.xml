@@ -45,8 +45,8 @@
     <string name="refresh_1min">1분마다</string>
     <string name="refresh_3min">3분마다</string>
     <string name="refresh_5min">5분마다</string>
-    <string name="pref_fast_scan">연결 직후 고속 스캔</string>
-    <string name="pref_fast_scan_desc">스캔 창의 처음 15초 동안 최고 속도로 돌려 배터리·착용 정보를 1초 안에 받아옵니다. 끄면 그 추가 전력 소모는 없지만 정보 표시가 몇 초 늦어집니다.</string>
+    <string name="pref_fast_scan">주기 갱신도 고속 스캔</string>
+    <string name="pref_fast_scan_desc">주기적으로 배터리를 갱신할 때도 처음 15초는 최고 속도로 스캔합니다. 끄면 그 추가 전력 소모가 없습니다. 에어팟을 연결한 직후에는 이 설정과 무관하게 항상 최고 속도로 읽어옵니다.</string>
     <string name="pref_aacp">하드웨어 제어 채널</string>
     <string name="pref_aacp_desc">노이즈 컨트롤, 자동 귀 감지, 대화 감지 같은 설정을 읽고 바꾸려면 에어팟과 별도의 제어 채널(L2CAP)을 연결해 유지해야 합니다. 배터리 표시만 필요하다면 꺼서 이 상시 연결에 드는 전력과 연결 부하를 줄일 수 있습니다. 끄면 ‘에어팟 설정’ 화면의 항목들이 표시되지 않습니다.</string>
     <string name="pref_aacp_battery">제어 채널로 배터리 직접 수신</string>
@@ -140,4 +140,8 @@
     <string name="perm_name_notif">알림</string>
     <string name="perm_name_bt">근처 기기</string>
     <string name="perm_name_overlay">다른 앱 위에 표시</string>
+    <string name="cat_display">표시</string>
+    <string name="cat_advanced">배터리 수신 방식</string>
+    <string name="conflict_on_demand">온디맨드 모드에서는 사용하지 않습니다 (주기 갱신·상주 없음)</string>
+    <string name="warn_nothing_to_show">아일랜드와 알림이 모두 꺼져 있어 연결해도 아무 것도 표시되지 않습니다</string>
 </resources>

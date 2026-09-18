@@ -65,8 +65,8 @@
     <string name="refresh_1min">Every 1 minute</string>
     <string name="refresh_3min">Every 3 minutes</string>
     <string name="refresh_5min">Every 5 minutes</string>
-    <string name="pref_fast_scan">Fast scan right after connecting</string>
-    <string name="pref_fast_scan_desc">During the scan window, runs at full speed for the first 15 seconds so battery and in-ear info arrive within a second. Turn off to avoid that brief extra power use; the info then appears a few seconds later.</string>
+    <string name="pref_fast_scan">Fast scan on periodic refresh too</string>
+    <string name="pref_fast_scan_desc">Periodic refresh scans also run at full speed for their first 15 seconds. Turn off to avoid that extra power use. Right after AirPods connect the app always scans at full speed regardless of this setting.</string>
     <string name="pref_aacp">Hardware control channel</string>
     <string name="pref_aacp_desc">Keeps a separate control link (L2CAP) to the AirPods so noise control, ear detection, conversation awareness and other settings can be read and changed. If you only need the battery display, turn this off to save the power and connection overhead of that always-on link. The items on the "AirPods settings" screen will then be hidden.</string>
     <string name="pref_aacp_battery">Read battery over the control channel</string>
@@ -167,4 +167,8 @@
     <string name="perm_name_notif">Notifications</string>
     <string name="perm_name_bt">Nearby devices</string>
     <string name="perm_name_overlay">Display over other apps</string>
+    <string name="cat_display">Display</string>
+    <string name="cat_advanced">Battery source</string>
+    <string name="conflict_on_demand">Not used in on-demand mode (no periodic refresh, no resident service)</string>
+    <string name="warn_nothing_to_show">The island and the alert are both off, so nothing will be shown when AirPods connect</string>
 </resources>

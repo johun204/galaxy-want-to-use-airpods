@@ -2,24 +2,10 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <!-- 무엇을, 언제 보여줄지 -->
     <PreferenceCategory
-        android:title="@string/feature_category"
+        android:title="@string/cat_display"
         app:iconSpaceReserved="false">
-
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="notif_persistent"
-            android:summary="@string/notif_persistent_desc"
-            android:title="@string/notif_persistent"
-            app:iconSpaceReserved="false" />
-
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="auto_on_connect"
-            android:summary="@string/pref_auto_connect_desc"
-            android:title="@string/pref_auto_connect"
-            app:iconSpaceReserved="false"
-            app:singleLineTitle="false" />
 
         <SwitchPreference
             android:defaultValue="true"
@@ -45,7 +31,8 @@
             android:key="notif_wear"
             android:summary="@string/notif_wear_desc"
             android:title="@string/notif_wear"
-            app:iconSpaceReserved="false" />
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
 
         <SwitchPreference
             android:defaultValue="true"
@@ -63,8 +50,17 @@
             android:title="@string/pref_wear_vibrate"
             app:iconSpaceReserved="false" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="auto_on_connect"
+            android:summary="@string/pref_auto_connect_desc"
+            android:title="@string/pref_auto_connect"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
     </PreferenceCategory>
 
+    <!-- 얼마나 자주 돌지 -->
     <PreferenceCategory
         android:title="@string/battery_category"
         app:iconSpaceReserved="false">
@@ -74,6 +70,14 @@
             android:key="on_demand"
             android:summary="@string/pref_on_demand_desc"
             android:title="@string/pref_on_demand"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="notif_persistent"
+            android:summary="@string/notif_persistent_desc"
+            android:title="@string/notif_persistent"
             app:iconSpaceReserved="false"
             app:singleLineTitle="false" />
 
@@ -98,6 +102,13 @@
             android:title="@string/pref_fast_scan"
             app:iconSpaceReserved="false"
             app:singleLineTitle="false" />
+
+    </PreferenceCategory>
+
+    <!-- 배터리 값을 어디서 받을지 -->
+    <PreferenceCategory
+        android:title="@string/cat_advanced"
+        app:iconSpaceReserved="false">
 
         <SwitchPreference
             android:defaultValue="true"

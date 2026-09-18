@@ -96,6 +96,7 @@ public class PodsService extends Service {
     private static final long ONDEMAND_MIN_GAP = 45000;// 화면 on/앱 열기 즉석 갱신 최소 간격
     private static final long WEAR_SETTLE_MS = 1500;   // 연결 후 알림까지 데이터 안정 대기
     private static final long WATCHDOG_INTERVAL = 60000;
+    private static final long DEFER_MS = 60000;        // 화면 꺼짐 상태에서 아일랜드를 미뤄 두는 최대 시간
 
     // 소리/진동 조합별 알림 채널 (안드로이드는 채널 생성 후 소리/진동 변경 불가라 4개로 나눔)
     private static final String WEAR_SV = "wear_v3_sv";
@@ -120,6 +121,7 @@ public class PodsService extends Service {
     private int mShowWhat = 0;                   // 아직 띄우지 못한 표시 요청 (SHOW_* 비트)
     private boolean mAlertPending = false;
     private long mAlertDeadline = 0;             // 이 시각까지만 알림 발화 재시도
+    private long mDeferUntil = 0;                // 화면이 꺼져 있을 때 아일랜드를 미뤄 둘 시한
 
     private BluetoothDevice mDevice;
     private AacpManager mAacp;
@@ -335,7 +337,7 @@ public class PodsService extends Service {
         mDevice = device;
         startAacp();
         if (!wasConnected) {
-            openScanWindow(SETTLE_MS);
+            openScanWindow(SETTLE_MS, true); // 연결 직후엔 항상 고속 — 표시가 늦지 않게
             // 연결당 1회: 설정에 따라 알림 / 아일랜드 (앱을 열어 둔 상태에서도 그대로 띄운다)
             int what = isAutoOnConnect(this)
                     ? (isWearAlertEnabled(this) ? SHOW_NOTIF : 0) | (isIslandEnabled(this) ? SHOW_ISLAND : 0)
@@ -378,6 +380,11 @@ public class PodsService extends Service {
 
     // 화면이 켜졌거나 잠금이 풀린 순간.
     private void onScreenInteractive() {
+        // 화면이 꺼져 있어서 미뤄 둔 아일랜드가 있으면 지금 띄운다
+        if (mShowWhat != 0) {
+            mHandler.removeCallbacks(mFireShow);
+            mHandler.post(mFireShow);
+        }
         if (!mMaybeConnected || mScanning)
             return;
         // 절전 옵션 + 아직 잠금 화면 → 무시
@@ -399,6 +406,14 @@ public class PodsService extends Service {
     }
 
     private void openScanWindow(long durationMs) {
+        openScanWindow(durationMs, isFastScanOnConnect(this));
+    }
+
+    /**
+     * @param forceFast 연결 직후처럼 "지금 당장 값이 필요한" 순간엔 절전 설정과 무관하게 고속 스캔.
+     *                  절전 옵션들은 주기적 갱신에만 적용된다.
+     */
+    private void openScanWindow(long durationMs, boolean forceFast) {
         if (!mMaybeConnected)
             return;
         mHandler.removeCallbacks(mEndWindow);
@@ -406,15 +421,17 @@ public class PodsService extends Service {
         // 같은 주기로 제어 채널에도 배터리 재요청 (연결돼 있으면)
         if (mAacp != null && isAacpBatteryEnabled(this))
             mAacp.requestBattery();
-        startScanner(isFastScanOnConnect(this));
+        startScanner(forceFast);
         mHandler.postDelayed(mEndWindow, durationMs);
         // 고속 구간이 끝나면 일반 속도로 낮춰 다시 스캔
-        if (isFastScanOnConnect(this) && durationMs > FAST_HEAD_MS)
+        if (forceFast && durationMs > FAST_HEAD_MS)
             mHandler.postDelayed(() -> {
                 if (mScanning)
                     startScanner(false);
             }, FAST_HEAD_MS);
     }
+
+    private final Runnable mFireShow = this::fireShow;
 
     private final Runnable mReopenWindow = () -> openScanWindow(REFRESH_MS);
 
@@ -572,10 +589,11 @@ public class PodsService extends Service {
     private void requestShow(int what) {
         mShowWhat |= what;
         mAlertDeadline = System.currentTimeMillis() + SETTLE_MS;
+        mDeferUntil = System.currentTimeMillis() + DEFER_MS;
         if (!mAlertPending) {
             mAlertPending = true;
             // 이미 값이 있으면 스캔도 대기도 없이 바로 띄운다 (루틴에서 부를 때 즉시 반응 + 스캔 0회)
-            mHandler.postDelayed(this::fireShow, hasBattery() ? 0 : WEAR_SETTLE_MS);
+            mHandler.postDelayed(mFireShow, hasBattery() ? 0 : WEAR_SETTLE_MS);
         }
     }
 
@@ -592,21 +610,35 @@ public class PodsService extends Service {
             // 아직 연결 확인 전이거나 배터리 값을 못 받음 — 마감 시각 전이면 재시도
             if (System.currentTimeMillis() < mAlertDeadline) {
                 if (mMaybeConnected && !mScanning)
-                    openScanWindow(REFRESH_MS); // 값이 없을 때만 비콘 스캔
+                    openScanWindow(REFRESH_MS, true); // 값이 없을 때만, 대신 고속으로
                 mAlertPending = true;
-                mHandler.postDelayed(this::fireShow, 2000);
+                mHandler.postDelayed(mFireShow, 2000);
                 return;
             }
             mShowWhat = 0;
             stopLaterIfOnDemand();
             return;
         }
-        int what = mShowWhat;
-        mShowWhat = 0;
-        if ((what & SHOW_NOTIF) != 0)
+        // 알림은 화면이 꺼져 있어도 지금 띄운다 (알림함에 남으니까)
+        if ((mShowWhat & SHOW_NOTIF) != 0) {
             showWearAlert(wearBody(s));
-        if ((what & SHOW_ISLAND) != 0)
+            mShowWhat &= ~SHOW_NOTIF;
+        }
+        // 아일랜드는 화면이 꺼져 있으면 켜질 때까지 보류 — 주머니 속에서 혼자 떴다 사라지지 않게
+        if ((mShowWhat & SHOW_ISLAND) != 0) {
+            if (!isInteractive()) { // 잠금 화면 위에는 오버레이가 보이지 않는다
+                if (System.currentTimeMillis() < mDeferUntil) {
+                    mAlertPending = true;
+                    mHandler.postDelayed(mFireShow, 10000); // 화면이 켜지면 리시버가 더 빨리 깨운다
+                    return;
+                }
+                mShowWhat = 0;
+                stopLaterIfOnDemand();
+                return;
+            }
             IslandOverlay.show(this, s);
+            mShowWhat &= ~SHOW_ISLAND;
+        }
         stopLaterIfOnDemand();
     }
 
