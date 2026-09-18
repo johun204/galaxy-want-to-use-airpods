@@ -61,7 +61,7 @@ public final class BatteryRing {
         if (charging) {
             Paint bp = new Paint(Paint.ANTI_ALIAS_FLAG);
             bp.setColor(GREEN);
-            float u = sizePx * 0.06f, cx = sizePx / 2f, cy = sizePx - stroke * 1.15f;
+            float u = sizePx * 0.105f, cx = sizePx / 2f, cy = sizePx * 0.82f;
             Path bolt = new Path();
             bolt.moveTo(cx + u * 0.3f, cy - u);
             bolt.lineTo(cx - u * 0.9f, cy + u * 0.2f);
@@ -72,7 +72,7 @@ public final class BatteryRing {
             bolt.close();
             Paint halo = new Paint(Paint.ANTI_ALIAS_FLAG);
             halo.setColor(Color.WHITE);
-            c.drawCircle(cx, cy, u * 1.5f, halo);
+            c.drawCircle(cx, cy, u * 1.45f, halo);
             c.drawPath(bolt, bp);
         }
         return bmp;

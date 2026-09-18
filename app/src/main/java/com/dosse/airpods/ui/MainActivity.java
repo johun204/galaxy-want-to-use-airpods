@@ -1,5 +1,6 @@
 package com.dosse.airpods.ui;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -10,6 +11,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,6 +20,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -35,6 +38,8 @@ import com.dosse.airpods.utils.SharedPreferencesUtils;
 import java.util.Objects;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int BT_REQUEST_CODE = 201;
 
     private boolean mUpdatingUi = false;
 
@@ -117,7 +122,42 @@ public class MainActivity extends AppCompatActivity {
             warn.setVisibility(PermissionUtils.checkAllPermissions(this) ? View.GONE : View.VISIBLE);
 
         render(); // 브로드캐스트를 기다리지 않고 마지막 스냅샷을 즉시 반영
-        maybeAskOverlay();
+        if (!maybeAskBluetooth()) // 블루투스 안내가 떴으면 오버레이 안내는 다음 기회에
+            maybeAskOverlay();
+    }
+
+    /**
+     * 근처 기기(블루투스) 권한이 없으면 배터리를 전혀 읽을 수 없다 — 열 때마다 안내한다.
+     * @return 안내 다이얼로그를 띄웠으면 true
+     */
+    private boolean maybeAskBluetooth() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || PermissionUtils.getBluetoothPermissions(this))
+            return false;
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(R.string.perm_bt_title)
+                .setMessage(R.string.perm_bt_msg)
+                .setPositiveButton(R.string.perm_bt_grant, (d, w) -> requestPermissions(
+                        new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT},
+                        BT_REQUEST_CODE))
+                .setNegativeButton(android.R.string.cancel, null)
+                .show();
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != BT_REQUEST_CODE)
+            return;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !PermissionUtils.getBluetoothPermissions(this)) {
+            // '다시 묻지 않음' 으로 거부된 상태 — 시스템 다이얼로그가 안 뜨므로 앱 정보 화면으로 보낸다
+            Toast.makeText(this, R.string.perm_bt_settings, Toast.LENGTH_LONG).show();
+            startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + getPackageName())));
+        } else {
+            startServiceIfPodsConnected(((BluetoothManager) Objects.requireNonNull(
+                    getSystemService(Context.BLUETOOTH_SERVICE))).getAdapter());
+        }
     }
 
     // 아일랜드가 켜져 있는데 '다른 앱 위에 표시' 권한이 없으면 한 번만 물어본다

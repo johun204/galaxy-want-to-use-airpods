@@ -31,6 +31,7 @@ import com.dosse.airpods.receivers.ScreenReceiver;
 import com.dosse.airpods.ui.IslandOverlay;
 import com.dosse.airpods.ui.MainActivity;
 import com.dosse.airpods.utils.Logger;
+import com.dosse.airpods.utils.PermissionUtils;
 import com.dosse.airpods.widget.PodsWidget;
 
 import java.util.Locale;
@@ -151,6 +152,13 @@ public class PodsService extends Service {
         mHandler = new Handler(Looper.getMainLooper());
 
         startForeground(NOTIFICATION_ID, buildFgNotification());
+
+        // 근처 기기(블루투스) 권한이 없으면 아무 것도 할 수 없다 — 바로 접는다. 안내는 앱 화면에서.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && !PermissionUtils.getBluetoothPermissions(this)) {
+            stopSelf();
+            return;
+        }
 
         mBtReceiver = new BluetoothReceiver() {
             @Override

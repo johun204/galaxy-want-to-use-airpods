@@ -50,10 +50,18 @@ public final class IslandOverlay {
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                            | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                            // 상태바 영역까지 올라가도록 (펀치홀 카메라와 겹침)
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            lp.y = Math.round(8 * ctx.getResources().getDisplayMetrics().density);
+            lp.y = 0;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
+                lp.setFitInsetsTypes(0); // 시스템 바 인셋만큼 밀려나지 않게
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
+                lp.layoutInDisplayCutoutMode = // 펀치홀 카메라 영역까지 그리기
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
 
             v.setAlpha(0f);
             v.setOnClickListener(x -> {
@@ -83,7 +91,7 @@ public final class IslandOverlay {
     }
 
     private static void bind(Context ctx, View v, PodsSnapshot s) {
-        int px = Math.round(30 * ctx.getResources().getDisplayMetrics().density);
+        int px = Math.round(44 * ctx.getResources().getDisplayMetrics().density);
         v.findViewById(R.id.i_left).setVisibility(s.single ? View.GONE : View.VISIBLE);
         v.findViewById(R.id.i_right).setVisibility(s.single ? View.GONE : View.VISIBLE);
         if (!s.single) {

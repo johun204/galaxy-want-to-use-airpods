@@ -149,4 +149,8 @@
     <string name="shortcut_island_long">Show battery at the top</string>
     <string name="shortcut_alert">Battery alert</string>
     <string name="shortcut_alert_long">Show battery as a notification</string>
+    <string name="perm_bt_title">Nearby devices permission needed</string>
+    <string name="perm_bt_msg">Without the "Nearby devices" permission the app cannot read the AirPods battery at all. Please allow it.</string>
+    <string name="perm_bt_grant">Allow</string>
+    <string name="perm_bt_settings">Allow Nearby devices under Permissions</string>
 </resources>
