@@ -96,7 +96,7 @@ public class PodsService extends Service {
     private static final long ONDEMAND_MIN_GAP = 45000;// 화면 on/앱 열기 즉석 갱신 최소 간격
     private static final long WEAR_SETTLE_MS = 1500;   // 연결 후 알림까지 데이터 안정 대기
     private static final long WATCHDOG_INTERVAL = 60000;
-    private static final long DEFER_MS = 60000;        // 화면 꺼짐 상태에서 아일랜드를 미뤄 두는 최대 시간
+    private static final long DEFER_MS = 600000;       // 화면 꺼짐 상태에서 아일랜드를 미뤄 두는 최대 시간 (10분)
 
     // 소리/진동 조합별 알림 채널 (안드로이드는 채널 생성 후 소리/진동 변경 불가라 4개로 나눔)
     private static final String WEAR_SV = "wear_v3_sv";
@@ -619,25 +619,28 @@ public class PodsService extends Service {
             stopLaterIfOnDemand();
             return;
         }
-        // 알림은 화면이 꺼져 있어도 지금 띄운다 (알림함에 남으니까)
+        // 아일랜드를 먼저 띄운다 (잠금 화면 위에는 오버레이가 보이지 않으니 잠금이 풀린 뒤에만)
+        boolean islandShown = false;
+        if ((mShowWhat & SHOW_ISLAND) != 0 && isInteractive()) {
+            islandShown = IslandOverlay.show(this, s);
+            if (islandShown)
+                mShowWhat &= ~SHOW_ISLAND;
+        }
+        // 알림은 알림함에 남으니 화면이 꺼져 있어도 지금 띄운다.
+        // 단 아일랜드를 띄웠다면 헤즈업 배너가 화면 상단에서 아일랜드를 덮으므로 배너 없이 넣는다.
         if ((mShowWhat & SHOW_NOTIF) != 0) {
-            showWearAlert(wearBody(s));
+            showWearAlert(wearBody(s), islandShown);
             mShowWhat &= ~SHOW_NOTIF;
         }
-        // 아일랜드는 화면이 꺼져 있으면 켜질 때까지 보류 — 주머니 속에서 혼자 떴다 사라지지 않게
+        // 화면이 꺼져 있어 못 띄운 아일랜드는 화면을 켤 때까지 보류
         if ((mShowWhat & SHOW_ISLAND) != 0) {
-            if (!isInteractive()) { // 잠금 화면 위에는 오버레이가 보이지 않는다
-                if (System.currentTimeMillis() < mDeferUntil) {
-                    mAlertPending = true;
-                    mHandler.postDelayed(mFireShow, 10000); // 화면이 켜지면 리시버가 더 빨리 깨운다
-                    return;
-                }
-                mShowWhat = 0;
-                stopLaterIfOnDemand();
+            if (System.currentTimeMillis() < mDeferUntil) {
+                stopScanner(); // 기다리는 동안 스캔은 하지 않는다
+                mAlertPending = true;
+                mHandler.postDelayed(mFireShow, 30000); // 화면이 켜지면 리시버가 더 빨리 깨운다
                 return;
             }
-            IslandOverlay.show(this, s);
-            mShowWhat &= ~SHOW_ISLAND;
+            mShowWhat = 0;
         }
         stopLaterIfOnDemand();
     }
@@ -661,15 +664,18 @@ public class PodsService extends Service {
                 + "    " + getString(R.string.pod_case) + " " + dash(s.caseB);
     }
 
-    private void showWearAlert(String body) {
-        boolean snd = isWearSoundEnabled(this), vib = isWearVibrateEnabled(this);
-        String channel = snd && vib ? WEAR_SV : snd ? WEAR_S : vib ? WEAR_V : WEAR_SILENT;
+    /**
+     * @param quiet 아일랜드를 이미 띄웠으면 true — 헤즈업 배너가 아일랜드를 가리지 않도록
+     *              소리/진동은 그대로 두고 화면 상단 배너만 띄우지 않는다.
+     */
+    private void showWearAlert(String body, boolean quiet) {
+        String channel = wearChannel(quiet);
 
         Notification n = new NotificationCompat.Builder(this, channel)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(getString(R.string.wear_alert_title))
                 .setContentText(body)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setPriority(quiet ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
                 .setTimeoutAfter(8000)
@@ -690,25 +696,32 @@ public class PodsService extends Service {
         status.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
         mNM.createNotificationChannel(status);
 
-        String label = getString(R.string.wear_channel);
-        createWearChannel(WEAR_SV, label + " (소리+진동)", true, true);
-        createWearChannel(WEAR_S, label + " (소리)", true, false);
-        createWearChannel(WEAR_V, label + " (진동)", false, true);
-        createWearChannel(WEAR_SILENT, label + " (무음)", false, false);
-
+        // 착용 알림 채널은 쓰는 순간에 만든다 (헤즈업 O/X 두 벌)
+        for (String old : new String[]{WEAR_SV, WEAR_S, WEAR_V, WEAR_SILENT})
+            mNM.deleteNotificationChannel(old);
         mNM.deleteNotificationChannel("AirPods_wear");
         mNM.deleteNotificationChannel("wear_alert_v2");
         mNM.deleteNotificationChannel("FOREGROUND_ID");
         mNM.deleteNotificationChannel("background_min");
     }
 
-    private void createWearChannel(String id, CharSequence name, boolean sound, boolean vibrate) {
-        NotificationChannel c = new NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH);
+    /** 소리/진동 조합 + 헤즈업 여부에 맞는 채널을 (없으면 만들어서) 돌려준다. */
+    private String wearChannel(boolean quiet) {
+        boolean snd = isWearSoundEnabled(this), vib = isWearVibrateEnabled(this);
+        String suffix = snd && vib ? "sv" : snd ? "s" : vib ? "v" : "none";
+        String id = (quiet ? "wear_v4q_" : "wear_v4_") + suffix;
+        String label = getString(R.string.wear_channel)
+                + (snd && vib ? " (소리+진동)" : snd ? " (소리)" : vib ? " (진동)" : " (무음)")
+                + (quiet ? " (배너 없음)" : "");
+
+        NotificationChannel c = new NotificationChannel(id, label,
+                quiet ? NotificationManager.IMPORTANCE_DEFAULT : NotificationManager.IMPORTANCE_HIGH);
         c.setShowBadge(false);
-        if (!sound)
+        if (!snd)
             c.setSound(null, null);
-        c.enableVibration(vibrate);
-        mNM.createNotificationChannel(c);
+        c.enableVibration(vib);
+        mNM.createNotificationChannel(c); // 이미 있으면 무시된다
+        return id;
     }
 
     private Notification buildFgNotification() {

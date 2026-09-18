@@ -51,13 +51,22 @@ public final class IslandOverlay {
         return SharedPreferencesUtils.islandSeconds(c) * 1000L;
     }
 
-    public static void show(Context ctx, PodsSnapshot s) {
+    /** @return 실제로 화면에 붙였으면 true */
+    public static boolean show(Context ctx, PodsSnapshot s) {
         Context app = ctx.getApplicationContext();
-        if (!hasPermission(app) || !s.available)
-            return;
+        if (!hasPermission(app)) {
+            Logger.debug("island skipped: no overlay permission");
+            return false;
+        }
+        if (!s.available) {
+            Logger.debug("island skipped: no battery data");
+            return false;
+        }
         PowerManager pm = app.getSystemService(PowerManager.class);
-        if (pm != null && !pm.isInteractive())
-            return; // 화면이 꺼져 있으면 띄워도 못 본다
+        if (pm != null && !pm.isInteractive()) {
+            Logger.debug("island skipped: screen off");
+            return false; // 화면이 꺼져 있으면 띄워도 못 본다
+        }
         H.removeCallbacks(HIDE); // 이전 표시의 자동 숨김 타이머가 새 아일랜드를 지우지 않게
         remove(sView);
         sView = null;
@@ -94,18 +103,25 @@ public final class IslandOverlay {
             sView = v;
             sCtx = app;
 
-            // 레이아웃이 끝나야 크기를 알 수 있다 → 그때 상단 중앙(펀치홀)을 기준으로 커진다
-            v.post(() -> {
-                v.setPivotX(v.getWidth() / 2f);
-                v.setPivotY(0f);
-                v.setScaleX(START_SCALE);
-                v.setScaleY(START_SCALE);
-                v.animate().alpha(1f).scaleX(1f).scaleY(1f)
-                        .setDuration(IN_MS).setInterpolator(new DecelerateInterpolator()).start();
+            // 첫 레이아웃이 끝나야 폭을 안다 → 그때 상단 중앙(펀치홀)을 기준으로 커진다
+            v.setScaleX(START_SCALE);
+            v.setScaleY(START_SCALE);
+            v.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View view, int l, int t, int r, int b,
+                                           int ol, int ot, int or, int ob) {
+                    view.removeOnLayoutChangeListener(this);
+                    view.setPivotX((r - l) / 2f);
+                    view.setPivotY(0f);
+                    view.animate().alpha(1f).scaleX(1f).scaleY(1f)
+                            .setDuration(IN_MS).setInterpolator(new DecelerateInterpolator()).start();
+                }
             });
             H.postDelayed(HIDE, showMs(app) + IN_MS);
+            return true;
         } catch (Throwable t) {
             Logger.error(t);
+            return false;
         }
     }
 
