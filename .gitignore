@@ -13,3 +13,9 @@ build
 
 # macOS
 .DS_Store
+# Signing
+keystore.properties
+*.jks
+
+# Build output
+app/release

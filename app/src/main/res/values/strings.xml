@@ -80,6 +80,11 @@
     <string name="pref_wear_vibrate">Alert vibration</string>
     <string name="pref_wear_vibrate_desc">Vibrate with the battery alert.</string>
     <string name="wear_channel">Battery alert</string>
+    <string name="wear_ch_sound_vib">sound + vibration</string>
+    <string name="wear_ch_sound">sound</string>
+    <string name="wear_ch_vib">vibration</string>
+    <string name="wear_ch_silent">silent</string>
+    <string name="wear_ch_no_banner">no banner</string>
     <string name="wear_alert_title">AirPods connected</string>
     <string name="pod_left">L</string>
     <string name="pod_right">R</string>

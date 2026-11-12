@@ -2,6 +2,12 @@ plugins {
     alias(libs.plugins.androidApplication)
 }
 
+// 릴리스 서명 키: 저장소 밖(~/.android)에 두고, 비밀번호는 gitignore 된 keystore.properties 에서 읽는다
+def keystoreProps = new Properties()
+def keystoreFile = rootProject.file('keystore.properties')
+if (keystoreFile.exists())
+    keystoreFile.withInputStream { keystoreProps.load(it) }
+
 android {
     namespace 'com.dosse.airpods'
     compileSdk = 36
@@ -10,15 +16,26 @@ android {
         applicationId "com.dosse.airpods"
         minSdk 26
         targetSdk 36
-        versionCode 30
-        versionName '1.17'
+        versionCode 31
+        versionName '1.18'
+    }
+
+    signingConfigs {
+        if (!keystoreProps.isEmpty()) {
+            release {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
     }
 
     buildTypes {
         release {
-            // 개인 사이드로드용: 디버그 키로 서명해 바로 설치 가능하게 함.
-            // ponytail: 디버그 키 서명. Play 배포나 고정 서명 신원이 필요해지면 별도 keystore 생성.
-            signingConfig signingConfigs.debug
+            // 고정 키로 서명해야 다음 버전이 기존 설치 위에 덮어 깔린다.
+            // keystore.properties 가 없으면(다른 PC 등) 디버그 키로 대체 — 그 APK 는 덮어 설치되지 않는다.
+            signingConfig signingConfigs.findByName('release') ?: signingConfigs.debug
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

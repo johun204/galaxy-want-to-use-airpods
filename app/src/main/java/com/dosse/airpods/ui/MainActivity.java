@@ -2,9 +2,7 @@ package com.dosse.airpods.ui;
 
 import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
-import android.bluetooth.BluetoothProfile;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -73,43 +71,9 @@ public class MainActivity extends AppCompatActivity {
         if (warn != null)
             warn.setOnClickListener(v -> startActivity(new Intent(this, IntroActivity.class)));
 
-        startServiceIfPodsConnected(btAdapter); // 서비스는 가진 권한으로 최선을 다함
+        // 서비스는 onStart 의 setAppForeground 가 에어팟이 연결돼 있을 때만 깨운다
         //Warn MIUI users that their rom has known issues
         MIUIWarning.show(this);
-    }
-
-    // AirPods가 실제로 연결돼 있을 때만 서비스를 시작한다 (연결 안 됐으면 알림도 안 뜨게).
-    @SuppressWarnings("MissingPermission")
-    private void startServiceIfPodsConnected(BluetoothAdapter btAdapter) {
-        if (btAdapter == null || !btAdapter.isEnabled())
-            return;
-        try {
-            btAdapter.getProfileProxy(getApplicationContext(), new BluetoothProfile.ServiceListener() {
-                @Override
-                public void onServiceConnected(int profile, BluetoothProfile proxy) {
-                    boolean found = false;
-                    try {
-                        for (BluetoothDevice d : proxy.getConnectedDevices()) {
-                            if (com.dosse.airpods.pods.PodsService.isPods(d)) {
-                                found = true;
-                                break;
-                            }
-                        }
-                    } catch (Throwable ignored) {
-                    }
-                    btAdapter.closeProfileProxy(profile, proxy);
-                    if (found)
-                        ContextCompat.startForegroundService(getApplicationContext(),
-                                new Intent(getApplicationContext(), PodsService.class)
-                                        .setAction(PodsService.ACTION_REFRESH));
-                }
-
-                @Override
-                public void onServiceDisconnected(int profile) {
-                }
-            }, BluetoothProfile.HEADSET);
-        } catch (Throwable ignored) {
-        }
     }
 
     @Override
@@ -159,8 +123,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
                     android.net.Uri.parse("package:" + getPackageName())));
         } else {
-            startServiceIfPodsConnected(((BluetoothManager) Objects.requireNonNull(
-                    getSystemService(Context.BLUETOOTH_SERVICE))).getAdapter());
+            PodsService.wakeIfPodsConnected(this); // 방금 권한을 받았다 — 연결돼 있으면 바로 읽기 시작
         }
     }
 

@@ -79,11 +79,66 @@ public class PodsService extends Service {
     private static final int SHOW_NOTIF = 1;   // 표시 요청 비트: 배터리 알림
     private static final int SHOW_ISLAND = 2;  // 표시 요청 비트: 다이나믹 아일랜드
 
+    private static volatile boolean sRunning = false; // 서비스 인스턴스가 살아 있는가
+    private static int sAppForeground = 0;            // 앞에 떠 있는 액티비티 수 (>0 이면 연속 스캔). 메인 스레드 전용
+
+    /** 서비스를 띄울 수 있는 상태인가 — 근처 기기 권한이 없으면 포그라운드 서비스 시작 자체가 예외를 던진다 */
+    public static boolean canRun(Context c) {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || PermissionUtils.getBluetoothPermissions(c);
+    }
+
     /** 앱 액티비티가 앞/뒤로 갈 때 호출 → 앞이면 비콘 연속 스캔 */
-    public static void setAppForeground(android.content.Context c, boolean foreground) {
+    public static void setAppForeground(Context c, boolean foreground) {
+        sAppForeground = Math.max(0, sAppForeground + (foreground ? 1 : -1));
+        if (sRunning)
+            nudge(c, foreground ? ACTION_APP_FOREGROUND : ACTION_APP_BACKGROUND);
+        else if (foreground)
+            wakeIfPodsConnected(c);
+        // 뒤로 갈 때 서비스가 없으면 알릴 것도 없다 — 죽은 서비스를 되살리지 않는다
+    }
+
+    /** AirPods가 실제로 연결돼 있을 때만 서비스를 깨운다 (연결 안 됐으면 알림도 안 뜨게). 앱이 앞에 있을 때만 호출. */
+    @SuppressLint("MissingPermission")
+    public static void wakeIfPodsConnected(Context c) {
+        Context app = c.getApplicationContext();
+        if (sRunning || !canRun(app))
+            return;
         try {
-            c.startService(new Intent(c, PodsService.class)
-                    .setAction(foreground ? ACTION_APP_FOREGROUND : ACTION_APP_BACKGROUND));
+            BluetoothAdapter ba = ((BluetoothManager)Objects.requireNonNull(app.getSystemService(BLUETOOTH_SERVICE))).getAdapter();
+            if (ba == null || !ba.isEnabled())
+                return;
+            ba.getProfileProxy(app, new BluetoothProfile.ServiceListener() {
+                @Override
+                public void onServiceConnected(int profile, BluetoothProfile proxy) {
+                    boolean found = false;
+                    try {
+                        for (BluetoothDevice d : proxy.getConnectedDevices()) {
+                            if (isPods(d)) {
+                                found = true;
+                                break;
+                            }
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                    ba.closeProfileProxy(profile, proxy);
+                    // 확인하는 사이 앱이 뒤로 갔으면 띄우지 않는다
+                    if (found && sAppForeground > 0)
+                        nudge(app, ACTION_APP_FOREGROUND);
+                }
+
+                @Override
+                public void onServiceDisconnected(int profile) {
+                }
+            }, BluetoothProfile.HEADSET);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void nudge(Context c, String action) {
+        if (!canRun(c))
+            return;
+        try {
+            c.startService(new Intent(c, PodsService.class).setAction(action));
         } catch (Throwable ignored) {
         }
     }
@@ -97,6 +152,10 @@ public class PodsService extends Service {
     private static final long WEAR_SETTLE_MS = 1500;   // 연결 후 알림까지 데이터 안정 대기
     private static final long WATCHDOG_INTERVAL = 60000;
     private static final long DEFER_MS = 600000;       // 화면 꺼짐 상태에서 아일랜드를 미뤄 두는 최대 시간 (10분)
+    private static final long WEAR_TIMEOUT_MS = 600000;// 배터리 알림이 알림함에 남아 있는 시간 (10분)
+    private static final long CACHE_OK_MS = 120000;    // 바로가기/루틴이 스캔 없이 써도 되는 캐시 값의 최대 나이
+    private static final long AACP_RETRY_MS = 1500;    // 제어 채널 연결 실패 후 재시도 간격
+    private static final int AACP_MAX_RETRIES = 2;     // 서비스 수명(=연결 1회)당
 
     // 소리/진동 조합별 알림 채널 (안드로이드는 채널 생성 후 소리/진동 변경 불가라 4개로 나눔)
     private static final String WEAR_SV = "wear_v3_sv";
@@ -111,21 +170,25 @@ public class PodsService extends Service {
     private PodsStatusScanCallback mScanCallback;
     private boolean mScanning = false;
     private long mLastScanEndAt = 0;
-    private int mAppForeground = 0;   // 앞에 떠 있는 액티비티 수 (>0 이면 연속 스캔)
+    private boolean mDestroyed = false;
 
     private PodsStatus mLastGoodStatus = null;   // 마지막으로 유효한 배터리를 담은 비콘
     private long mLastGoodAt = 0;
     private int mRssi = 0;
     private boolean mMaybeConnected = false;
+    private boolean mGotData = false;            // 이번 서비스 수명에 배터리 값을 받았는가
 
     private int mShowWhat = 0;                   // 아직 띄우지 못한 표시 요청 (SHOW_* 비트)
     private boolean mAlertPending = false;
     private long mAlertDeadline = 0;             // 이 시각까지만 알림 발화 재시도
     private long mDeferUntil = 0;                // 화면이 꺼져 있을 때 아일랜드를 미뤄 둘 시한
+    private boolean mShowFreshOnly = false;      // 대기 중인 표시 요청이 캐시 값을 쓰면 안 됨 (새 연결)
 
     private BluetoothDevice mDevice;
     private AacpManager mAacp;
     private boolean mAacpConnected = false;
+    private int mAacpGen = 0;                    // 지난 매니저의 뒤늦은 콜백을 걸러내는 세대 번호
+    private int mAacpRetries = 0;
     private String mDeviceName = "";
     // 제어 채널에서 직접 받은 배터리 (내 폰에 페어링된 그 에어팟)
     private int mAbL = -1, mAbR = -1, mAbC = -1;
@@ -154,14 +217,23 @@ public class PodsService extends Service {
         mBuilder = new NotificationBuilder(this);
         mHandler = new Handler(Looper.getMainLooper());
 
-        startForeground(NOTIFICATION_ID, buildFgNotification());
-
-        // 근처 기기(블루투스) 권한이 없으면 아무 것도 할 수 없다 — 바로 접는다. 안내는 앱 화면에서.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                && !PermissionUtils.getBluetoothPermissions(this)) {
+        // 권한이 없거나 백그라운드에서 되살아난 경우 startForeground 가 예외를 던진다 — 죽지 말고 접는다
+        try {
+            startForeground(NOTIFICATION_ID, buildFgNotification());
+        } catch (Throwable t) {
+            Logger.error(t);
+            mDestroyed = true;
             stopSelf();
             return;
         }
+
+        // 근처 기기(블루투스) 권한이 없으면 아무 것도 할 수 없다 — 바로 접는다. 안내는 앱 화면에서.
+        if (!canRun(this)) {
+            mDestroyed = true;
+            stopSelf();
+            return;
+        }
+        sRunning = true;
 
         mBtReceiver = new BluetoothReceiver() {
             @Override
@@ -178,12 +250,13 @@ public class PodsService extends Service {
             @Override
             public void onConnect(BluetoothDevice device) {
                 if (isPods(device))
-                    onPodsConnected(device);
+                    onPodsConnected(device, true);
             }
 
             @Override
             public void onDisconnect(BluetoothDevice device) {
-                if (isPods(device))
+                // 지금 보고 있는 그 기기가 끊겼을 때만 (다른 에어팟/Beats 해제에 반응하지 않게)
+                if (mDevice != null ? mDevice.equals(device) : isPods(device))
                     onPodsGone();
             }
         };
@@ -201,7 +274,7 @@ public class PodsService extends Service {
                 @Override
                 public boolean onConnect(BluetoothDevice device) {
                     if (isPods(device)) {
-                        onPodsConnected(device);
+                        onPodsConnected(device, false); // 이미 연결돼 있던 것 — 새 연결이 아니다
                         return true;
                     }
                     return false;
@@ -246,11 +319,13 @@ public class PodsService extends Service {
     @SuppressLint("MissingPermission")
     public int onStartCommand(Intent intent, int flags, int startId) {
         String action = intent != null ? intent.getAction() : null;
+        if (mDestroyed) // onCreate 에서 이미 접기로 함
+            return START_NOT_STICKY;
 
         if (ACTION_DEVICE_CONNECTED.equals(action)) {
             BluetoothDevice d = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
             if (isPods(d))
-                onPodsConnected(d);
+                onPodsConnected(d, true);
         } else if (ACTION_REFRESH.equals(action)) {
             requestRefresh();
         } else if (ACTION_SHOW_ISLAND.equals(action)) {
@@ -258,14 +333,15 @@ public class PodsService extends Service {
         } else if (ACTION_SHOW_ALERT.equals(action)) {
             requestShow(SHOW_NOTIF);
         } else if (ACTION_APP_FOREGROUND.equals(action)) {
-            mAppForeground++;
             if (mMaybeConnected && !mScanning)
-                openScanWindow(REFRESH_MS); // 연속 스캔으로 유지됨 (mAppForeground>0)
+                openScanWindow(REFRESH_MS); // 연속 스캔으로 유지됨 (sAppForeground>0)
         } else if (ACTION_APP_BACKGROUND.equals(action)) {
-            if (mAppForeground > 0)
-                mAppForeground--;
-            if (mAppForeground == 0 && mScanning)
-                mHandler.postDelayed(mEndWindow, REFRESH_MS); // 잠깐 더 스캔 후 듀티 사이클 복귀
+            if (sAppForeground == 0) {
+                if (mScanning)
+                    mHandler.postDelayed(mEndWindow, REFRESH_MS); // 잠깐 더 스캔 후 듀티 사이클 복귀
+                else
+                    stopLaterIfOnDemand();
+            }
         } else if (action != null && mAacp != null) {
             switch (action) {
                 case ACTION_SET_ANC: {
@@ -297,7 +373,8 @@ public class PodsService extends Service {
                 }
             }
         }
-        return START_STICKY;
+        // 스스로 접는 서비스다 — 프로세스가 죽은 뒤 백그라운드에서 되살아나면 포그라운드 시작이 거부된다
+        return START_NOT_STICKY;
     }
 
     private void optimistic(int id, int value) {
@@ -308,6 +385,9 @@ public class PodsService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        boolean ran = sRunning;
+        sRunning = false;
+        mDestroyed = true; // 이후 도착하는 AACP 콜백/예약 작업이 알림·스냅샷을 다시 건드리지 않게
         if (mHandler != null)
             mHandler.removeCallbacksAndMessages(null);
         stopAacp();
@@ -321,17 +401,23 @@ public class PodsService extends Service {
         } catch (Throwable ignored) {
         }
         mNM.cancel(NOTIFICATION_ID);
-        mNM.cancel(WEAR_NOTIFICATION_ID);
+        // 배터리 알림(WEAR_NOTIFICATION_ID)은 지우지 않는다 — 서비스가 내려가도 알림함에 남아야 한다
+        if (!ran) // 권한 없음 등으로 시작도 못 한 경우 — 스냅샷은 건드리지 않는다
+            return;
         // 온디맨드 모드에선 연결된 채로 서비스만 내려간다 — 마지막 배터리 값은 위젯/앱에 남겨둔다
         if (!mMaybeConnected)
-            PodsSnapshot.last = new PodsSnapshot();
+            setLast(new PodsSnapshot());
         broadcastSnapshot();
         PodsWidget.updateAll(this);
     }
 
     // ---------------- 연결 상태 ----------------
 
-    private void onPodsConnected(BluetoothDevice device) {
+    /**
+     * @param fresh 방금 연결됐다는 이벤트로 알게 된 경우 true. 서비스가 새로 뜨면서 "이미 연결돼 있음"을
+     *              확인한 것(앱·위젯 열기, 바로가기)은 false — 연결 시 자동 표시를 다시 띄우지 않는다.
+     */
+    private void onPodsConnected(BluetoothDevice device, boolean fresh) {
         boolean wasConnected = mMaybeConnected;
         mMaybeConnected = true;
         mDevice = device;
@@ -339,11 +425,11 @@ public class PodsService extends Service {
         if (!wasConnected) {
             openScanWindow(SETTLE_MS, true); // 연결 직후엔 항상 고속 — 표시가 늦지 않게
             // 연결당 1회: 설정에 따라 알림 / 아일랜드 (앱을 열어 둔 상태에서도 그대로 띄운다)
-            int what = isAutoOnConnect(this)
+            int what = fresh && isAutoOnConnect(this)
                     ? (isWearAlertEnabled(this) ? SHOW_NOTIF : 0) | (isIslandEnabled(this) ? SHOW_ISLAND : 0)
                     : 0;
             if (what != 0)
-                requestShow(what);
+                requestShow(what, true); // 지난 연결 때의 값이 아니라 이번에 읽은 값으로
             else
                 stopLaterIfOnDemand();
         }
@@ -353,6 +439,7 @@ public class PodsService extends Service {
         mMaybeConnected = false;
         mLastGoodStatus = null;
         mShowWhat = 0;
+        mShowFreshOnly = false;
         mAlertPending = false;
         stopScanner();
         publish();
@@ -436,7 +523,7 @@ public class PodsService extends Service {
     private final Runnable mReopenWindow = () -> openScanWindow(REFRESH_MS);
 
     private final Runnable mEndWindow = () -> {
-        if (mAppForeground > 0)
+        if (sAppForeground > 0)
             return; // 앱이 열려 있는 동안엔 계속 스캔
         stopScanner();
         mLastScanEndAt = System.currentTimeMillis();
@@ -445,8 +532,7 @@ public class PodsService extends Service {
         // 온디맨드 모드는 주기 스캔 자체를 하지 않는다 — 여기서 서비스를 접는다
         // (아직 띄우지 못한 알림/아일랜드가 있으면 그게 끝난 뒤에 접힌다)
         if (isOnDemandEnabled(this)) {
-            if (!mAlertPending && mShowWhat == 0)
-                stopSelf();
+            stopLaterIfOnDemand(); // 바로 접지 않는다 — 방금 띄운 아일랜드가 떠 있을 수 있다
             return;
         }
         // 절전 옵션 + 화면 꺼짐/잠금 → 다음 주기 스캔을 예약하지 않음 (잠금 해제 시 따라잡음)
@@ -509,6 +595,7 @@ public class PodsService extends Service {
         if (status != PodsStatus.DISCONNECTED && !status.isAllDisconnected()) {
             mLastGoodStatus = status;
             mLastGoodAt = System.currentTimeMillis();
+            mGotData = true;
             PodsSnapshot.lastBeaconAt = mLastGoodAt;
         }
         publish();
@@ -516,6 +603,8 @@ public class PodsService extends Service {
 
     /** 값이 바뀐 경우에만 알림/위젯/메인 화면을 갱신한다. */
     private void publish() {
+        if (mDestroyed)
+            return;
         boolean haveBeacon = mMaybeConnected && mLastGoodStatus != null;
         boolean useAacp = aacpBatteryUsable();
 
@@ -543,7 +632,7 @@ public class PodsService extends Service {
         String sig = sig(snap);
         if (!sig.equals(mLastSig)) {
             mLastSig = sig;
-            PodsSnapshot.last = snap;
+            setLast(snap);
             broadcastSnapshot();
             PodsWidget.updateAll(this);
             mNM.notify(NOTIFICATION_ID, buildFgNotification());
@@ -551,6 +640,12 @@ public class PodsService extends Service {
     }
 
     private String mLastSig = null;
+
+    // 프로세스가 죽어도 위젯/앱에 마지막 값이 남도록 저장까지 한다
+    private void setLast(PodsSnapshot snap) {
+        PodsSnapshot.last = snap;
+        snap.save(this);
+    }
 
     private static String sig(PodsSnapshot s) {
         // rssi 는 sig 제외 (지터로 매 비콘마다 갱신 방지). 찾기 화면은 정적 필드를 폴링.
@@ -587,7 +682,13 @@ public class PodsService extends Service {
 
     /** 알림·아일랜드를 띄워 달라는 요청. 배터리 값이 들어오는 대로 발화한다. */
     private void requestShow(int what) {
+        requestShow(what, false);
+    }
+
+    /** @param freshOnly 캐시된 값을 쓰지 않고 이번 서비스 수명에 읽은 값이 올 때까지 기다린다 */
+    private void requestShow(int what, boolean freshOnly) {
         mShowWhat |= what;
+        mShowFreshOnly |= freshOnly;
         mAlertDeadline = System.currentTimeMillis() + SETTLE_MS;
         mDeferUntil = System.currentTimeMillis() + DEFER_MS;
         if (!mAlertPending) {
@@ -597,9 +698,14 @@ public class PodsService extends Service {
         }
     }
 
-    private static boolean hasBattery() {
+    private boolean hasBattery() {
         PodsSnapshot s = PodsSnapshot.last;
-        return s.available && (s.leftPct >= 0 || s.rightPct >= 0 || s.casePct >= 0);
+        if (!s.available || (s.leftPct < 0 && s.rightPct < 0 && s.casePct < 0))
+            return false;
+        if (mGotData)
+            return true;
+        // 서비스가 내려가 있던 동안의 값 — 새 연결엔 쓰지 않고, 바로가기/루틴도 최근 것만 쓴다
+        return !mShowFreshOnly && System.currentTimeMillis() - s.updatedAt < CACHE_OK_MS;
     }
 
     private void fireShow() {
@@ -616,6 +722,7 @@ public class PodsService extends Service {
                 return;
             }
             mShowWhat = 0;
+            mShowFreshOnly = false;
             stopLaterIfOnDemand();
             return;
         }
@@ -642,6 +749,7 @@ public class PodsService extends Service {
             }
             mShowWhat = 0;
         }
+        mShowFreshOnly = false;
         stopLaterIfOnDemand();
     }
 
@@ -650,13 +758,16 @@ public class PodsService extends Service {
      * 이후엔 에어팟 재연결 / 바로가기(루틴) / 앱·위젯 열기 때만 잠깐 다시 뜬다.
      */
     private void stopLaterIfOnDemand() {
-        if (!isOnDemandEnabled(this) || mAppForeground > 0)
+        if (!isOnDemandEnabled(this) || sAppForeground > 0)
             return;
-        mHandler.postDelayed(() -> {
-            if (isOnDemandEnabled(this) && mAppForeground == 0 && !mAlertPending)
-                stopSelf();
-        }, IslandOverlay.showMs(this) + 1500);
+        mHandler.removeCallbacks(mStopIfDone);
+        mHandler.postDelayed(mStopIfDone, IslandOverlay.showMs(this) + 1500);
     }
+
+    private final Runnable mStopIfDone = () -> {
+        if (isOnDemandEnabled(this) && sAppForeground == 0 && !mAlertPending && mShowWhat == 0)
+            stopSelf();
+    };
 
     private String wearBody(PodsSnapshot s) {
         return getString(R.string.pod_left) + " " + dash(s.left)
@@ -678,7 +789,7 @@ public class PodsService extends Service {
                 .setPriority(quiet ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setAutoCancel(true)
-                .setTimeoutAfter(8000)
+                .setTimeoutAfter(WEAR_TIMEOUT_MS)
                 .setContentIntent(PendingIntent.getActivity(this, 0,
                         new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE))
                 .build();
@@ -710,9 +821,10 @@ public class PodsService extends Service {
         boolean snd = isWearSoundEnabled(this), vib = isWearVibrateEnabled(this);
         String suffix = snd && vib ? "sv" : snd ? "s" : vib ? "v" : "none";
         String id = (quiet ? "wear_v4q_" : "wear_v4_") + suffix;
-        String label = getString(R.string.wear_channel)
-                + (snd && vib ? " (소리+진동)" : snd ? " (소리)" : vib ? " (진동)" : " (무음)")
-                + (quiet ? " (배너 없음)" : "");
+        String label = getString(R.string.wear_channel) + " ("
+                + getString(snd && vib ? R.string.wear_ch_sound_vib : snd ? R.string.wear_ch_sound
+                        : vib ? R.string.wear_ch_vib : R.string.wear_ch_silent) + ")"
+                + (quiet ? " (" + getString(R.string.wear_ch_no_banner) + ")" : "");
 
         NotificationChannel c = new NotificationChannel(id, label,
                 quiet ? NotificationManager.IMPORTANCE_DEFAULT : NotificationManager.IMPORTANCE_HIGH);
@@ -754,28 +866,44 @@ public class PodsService extends Service {
         } catch (Throwable t) {
             mDeviceName = "AirPods";
         }
+        // 콜백은 리더 스레드에서 온다 — 상태는 전부 메인 스레드에서만 건드린다
+        final int gen = ++mAacpGen;
         mAacp = new AacpManager(new AacpManager.Listener() {
             @Override
             public void onAacpConnected(boolean connected) {
-                mAacpConnected = connected;
-                if (!connected)
-                    mControls.clear();
-                mHandler.post(PodsService.this::publish);
+                mHandler.post(() -> {
+                    if (mDestroyed || gen != mAacpGen)
+                        return;
+                    mAacpConnected = connected;
+                    if (!connected) {
+                        mControls.clear();
+                        retryAacp();
+                    }
+                    publish();
+                });
             }
 
             @Override
             public void onControl(int id, int value) {
-                mControls.put(id, value);
-                mHandler.post(PodsService.this::publish);
+                mHandler.post(() -> {
+                    if (mDestroyed || gen != mAacpGen)
+                        return;
+                    mControls.put(id, value);
+                    publish();
+                });
             }
 
             @Override
             public void onBattery(int lp, boolean lc, int rp, boolean rc, int cp, boolean cc) {
-                mAbL = lp; mAbLc = lc;
-                mAbR = rp; mAbRc = rc;
-                mAbC = cp; mAbCc = cc;
-                mAacpBatAt = System.currentTimeMillis();
                 mHandler.post(() -> {
+                    if (mDestroyed || gen != mAacpGen)
+                        return;
+                    mAbL = lp; mAbLc = lc;
+                    mAbR = rp; mAbRc = rc;
+                    mAbC = cp; mAbCc = cc;
+                    mAacpBatAt = System.currentTimeMillis();
+                    if (lp >= 0 || rp >= 0 || cp >= 0)
+                        mGotData = true;
                     publish();
                     endScanEarlyIfAacp();
                 });
@@ -784,15 +912,28 @@ public class PodsService extends Service {
         mAacp.start(mDevice);
     }
 
+    // 제어 채널이 실패했거나 끊겼다 — 연결 직후엔 L2CAP 이 아직 안 열릴 수 있어 몇 번 다시 시도한다
+    private void retryAacp() {
+        if (mAacp != null) {
+            mAacp.stop();
+            mAacp = null;
+        }
+        if (!mMaybeConnected || mAacpRetries >= AACP_MAX_RETRIES)
+            return;
+        mAacpRetries++;
+        mHandler.postDelayed(this::startAacp, AACP_RETRY_MS);
+    }
+
     /** 제어 채널에서 정확한 배터리를 받았으면 비콘 스캔을 더 돌릴 이유가 없다. */
     private void endScanEarlyIfAacp() {
-        if (!mScanning || mAppForeground > 0 || !aacpBatteryUsable())
+        if (!mScanning || sAppForeground > 0 || !aacpBatteryUsable())
             return;
         mHandler.removeCallbacks(mEndWindow);
         mHandler.post(mEndWindow);
     }
 
     private void stopAacp() {
+        mAacpGen++;
         if (mAacp != null) {
             mAacp.stop();
             mAacp = null;
@@ -828,7 +969,7 @@ public class PodsService extends Service {
             String name = device.getName();
             if (name != null) {
                 String n = name.toLowerCase(Locale.ROOT);
-                if (n.contains("airpod") || n.contains("beats") || n.contains("pods"))
+                if (n.contains("airpod") || n.contains("beats"))
                     return true;
             }
         } catch (Throwable ignored) {

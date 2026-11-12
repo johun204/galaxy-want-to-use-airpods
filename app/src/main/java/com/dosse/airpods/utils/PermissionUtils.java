@@ -35,6 +35,11 @@ public class PermissionUtils {
     }
 
     public static boolean getLocationPermissions(Context context) {
+        // Android 12+ 는 BLUETOOTH_SCAN(neverForLocation) 으로 스캔한다 — 위치 권한이 필요 없다
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return true;
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return getFineLocationPermission(context) && getBackgroundLocationPermission(context);
         }

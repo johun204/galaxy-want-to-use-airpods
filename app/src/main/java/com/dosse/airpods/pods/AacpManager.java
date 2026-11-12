@@ -78,6 +78,7 @@ public class AacpManager {
     private volatile OutputStream mOut;
     private Thread mReader;
     private volatile boolean mRunning = false;
+    private volatile boolean mStopped = false; // stop() 이후엔 리스너를 부르지 않는다
 
     public AacpManager(Listener listener) {
         mListener = listener;
@@ -92,6 +93,7 @@ public class AacpManager {
     }
 
     public synchronized void stop() {
+        mStopped = true;
         mRunning = false;
         closeSocket();
         if (mReader != null) {
@@ -241,6 +243,8 @@ public class AacpManager {
             else if (comp == COMP_RIGHT) { rp = pct; rc = chg; }
             else if (comp == COMP_CASE) { cp = pct; cc = chg; }
         }
+        if (mStopped)
+            return;
         try {
             mListener.onBattery(lp, lc, rp, rc, cp, cc);
         } catch (Throwable ignored) {
@@ -248,6 +252,8 @@ public class AacpManager {
     }
 
     private void emit(int id, int value) {
+        if (mStopped)
+            return;
         try {
             mListener.onControl(id, value);
         } catch (Throwable ignored) {
@@ -269,6 +275,8 @@ public class AacpManager {
     }
 
     private void notifyConnected(boolean c) {
+        if (mStopped)
+            return;
         try {
             mListener.onAacpConnected(c);
         } catch (Throwable ignored) {

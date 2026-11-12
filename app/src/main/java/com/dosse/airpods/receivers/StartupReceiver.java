@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.dosse.airpods.pods.PodsService;
+import com.dosse.airpods.utils.Logger;
 import com.dosse.airpods.utils.SharedPreferencesUtils;
 
 import java.util.Objects;
@@ -31,7 +32,13 @@ public class StartupReceiver extends BroadcastReceiver {
     }
 
     public static void startPodsService(Context context) {
-        context.startForegroundService(new Intent(context, PodsService.class));
+        if (!PodsService.canRun(context)) // 근처 기기 권한 없이는 포그라운드 서비스를 시작할 수 없다
+            return;
+        try {
+            context.startForegroundService(new Intent(context, PodsService.class));
+        } catch (Throwable t) {
+            Logger.error(t);
+        }
     }
 
     public static void restartPodsService(Context context) {

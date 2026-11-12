@@ -6,6 +6,7 @@ import android.os.Bundle;
 
 import androidx.core.content.ContextCompat;
 
+import com.dosse.airpods.R;
 import com.dosse.airpods.pods.PodsService;
 import com.dosse.airpods.utils.Logger;
 
@@ -18,7 +19,10 @@ public class ShortcutActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         String action = getIntent() != null ? getIntent().getAction() : null;
-        if (PodsService.ACTION_SHOW_ISLAND.equals(action) || PodsService.ACTION_SHOW_ALERT.equals(action)) {
+        if (!PodsService.canRun(this)) {
+            // 근처 기기 권한이 없으면 서비스를 띄울 수 없다 — 안내만 한다
+            android.widget.Toast.makeText(this, R.string.perm_bt_title, android.widget.Toast.LENGTH_LONG).show();
+        } else if (PodsService.ACTION_SHOW_ISLAND.equals(action) || PodsService.ACTION_SHOW_ALERT.equals(action)) {
             try {
                 ContextCompat.startForegroundService(this,
                         new Intent(this, PodsService.class).setAction(action));

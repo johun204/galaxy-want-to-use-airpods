@@ -1,5 +1,9 @@
 package com.dosse.airpods.pods;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+
+import com.dosse.airpods.BuildConfig;
 import com.dosse.airpods.R;
 import com.dosse.airpods.pods.models.IPods;
 import com.dosse.airpods.pods.models.RegularPods;
@@ -107,6 +111,54 @@ public class PodsSnapshot {
             rightImg = r.getRightDrawable();
             caseImg = r.getCaseDrawable();
         }
+    }
+
+    // ---------------- 저장/복원 ----------------
+    // 스냅샷은 정적 변수라 프로세스가 죽으면 사라진다. 온디맨드 모드에선 서비스가 내려가 있는 게
+    // 정상이라, 마지막 값을 저장해 두고 프로세스가 새로 뜰 때 되살려 위젯/앱에 그대로 보여준다.
+
+    private static final String PREFS = "last_snapshot";
+
+    public void save(Context c) {
+        SharedPreferences.Editor e = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear();
+        if (available)
+            e.putInt("ver", BuildConfig.VERSION_CODE) // drawable ID 는 빌드마다 달라질 수 있다
+                    .putBoolean("single", single)
+                    .putString("left", left).putString("right", right).putString("case", caseB)
+                    .putInt("leftPct", leftPct).putInt("rightPct", rightPct).putInt("casePct", casePct)
+                    .putBoolean("leftChg", leftChg).putBoolean("rightChg", rightChg).putBoolean("caseChg", caseChg)
+                    .putInt("leftImg", leftImg).putInt("rightImg", rightImg).putInt("caseImg", caseImg)
+                    .putString("name", deviceName).putLong("updatedAt", updatedAt);
+        e.apply();
+    }
+
+    /** 프로세스 시작 시 1회: 저장해 둔 마지막 값을 {@link #last} 로 되살린다. */
+    public static void restore(Context c) {
+        SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        if (p.getInt("ver", -1) != BuildConfig.VERSION_CODE)
+            return;
+        last = new PodsSnapshot(p);
+    }
+
+    private PodsSnapshot(SharedPreferences p) {
+        available = true;
+        single = p.getBoolean("single", false);
+        left = p.getString("left", "");
+        right = p.getString("right", "");
+        caseB = p.getString("case", "");
+        leftPct = p.getInt("leftPct", -1);
+        rightPct = p.getInt("rightPct", -1);
+        casePct = p.getInt("casePct", -1);
+        leftChg = p.getBoolean("leftChg", false);
+        rightChg = p.getBoolean("rightChg", false);
+        caseChg = p.getBoolean("caseChg", false);
+        leftInEar = rightInEar = false; // 지나간 착용 상태는 의미가 없다
+        leftImg = p.getInt("leftImg", R.drawable.pod_left);
+        rightImg = p.getInt("rightImg", R.drawable.pod_right);
+        caseImg = p.getInt("caseImg", R.drawable.pod_case);
+        deviceName = p.getString("name", "");
+        updatedAt = p.getLong("updatedAt", 0);
+        stale = true;
     }
 
     /** 비콘 없이 AACP 배터리만으로 구성 (일반 AirPods 외형). */

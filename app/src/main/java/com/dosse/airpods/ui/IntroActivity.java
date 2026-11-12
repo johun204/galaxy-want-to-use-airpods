@@ -79,11 +79,14 @@ public class IntroActivity extends AppCompatActivity {
         if (!PermissionUtils.getBatteryOptimizationsPermission(this)) {
             return STEP_PERMISSION_BATTERY_OPTIMIZATION;
         }
-        if (!PermissionUtils.getFineLocationPermission(this)) {
-            return STEP_PERMISSION_LOCATION;
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !PermissionUtils.getBackgroundLocationPermission(this)) {
-            return STEP_PERMISSION_BACKGROUND_LOCATION;
+        // Android 12+ 는 BLUETOOTH_SCAN(neverForLocation) 으로 스캔하므로 위치 권한을 묻지 않는다
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            if (!PermissionUtils.getFineLocationPermission(this)) {
+                return STEP_PERMISSION_LOCATION;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !PermissionUtils.getBackgroundLocationPermission(this)) {
+                return STEP_PERMISSION_BACKGROUND_LOCATION;
+            }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !PermissionUtils.getNotificationPermissions(this)) {
             return STEP_PERMISSION_NOTIFICATION;
@@ -94,7 +97,9 @@ public class IntroActivity extends AppCompatActivity {
 
     @SuppressLint("BatteryLife")
     private void initScreen() {
-        int currentStep = getPermissionState() - ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) ? 0 : 1);
+        int state = getPermissionState();
+        int currentStep = Build.VERSION.SDK_INT < Build.VERSION_CODES.S ? state - 1
+                : state == STEP_PERMISSION_NOTIFICATION ? 3 : state; // 12+ 는 위치 단계가 없다
 
         runOnUiThread(() -> {
             switch (getPermissionState()) {
@@ -142,10 +147,10 @@ public class IntroActivity extends AppCompatActivity {
 
     private int getNumberOfSteps() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            return 5;
+            return 3; // 블루투스, 배터리 최적화, 알림
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return 4;
+            return 2;
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return 3;

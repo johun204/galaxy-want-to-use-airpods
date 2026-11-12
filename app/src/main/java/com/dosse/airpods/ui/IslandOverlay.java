@@ -85,6 +85,11 @@ public final class IslandOverlay {
                             | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+            WindowManager wm = app.getSystemService(WindowManager.class);
+            // 펀치홀이 가운데가 아닌 화면(폴드 내부 등)에선 카메라 쪽으로 옮긴다. 화면 밖으로는 나가지 않는다.
+            final int cutoutX = cutoutCenterX(wm);
+            if (cutoutX >= 0)
+                lp.x = cutoutX - wm.getCurrentWindowMetrics().getBounds().width() / 2;
             lp.y = Math.round(6 * app.getResources().getDisplayMetrics().density); // 화면 맨 위에서 살짝 띄움
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
                 lp.setFitInsetsTypes(0); // 시스템 바 인셋만큼 밀려나지 않게
@@ -99,7 +104,7 @@ public final class IslandOverlay {
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             });
 
-            app.getSystemService(WindowManager.class).addView(v, lp);
+            wm.addView(v, lp);
             sView = v;
             sCtx = app;
 
@@ -111,7 +116,13 @@ public final class IslandOverlay {
                 public void onLayoutChange(View view, int l, int t, int r, int b,
                                            int ol, int ot, int or, int ob) {
                     view.removeOnLayoutChangeListener(this);
-                    view.setPivotX((r - l) / 2f);
+                    float pivot = (r - l) / 2f;
+                    if (cutoutX >= 0) { // 알약이 화면 끝에 걸려 카메라와 어긋났으면 카메라 위치를 기준점으로
+                        int[] pos = new int[2];
+                        view.getLocationOnScreen(pos);
+                        pivot = Math.max(0, Math.min(r - l, cutoutX - pos[0]));
+                    }
+                    view.setPivotX(pivot);
                     view.setPivotY(0f);
                     view.animate().alpha(1f).scaleX(1f).scaleY(1f)
                             .setDuration(IN_MS).setInterpolator(new DecelerateInterpolator()).start();
@@ -122,6 +133,21 @@ public final class IslandOverlay {
         } catch (Throwable t) {
             Logger.error(t);
             return false;
+        }
+    }
+
+    /** 화면 위쪽 펀치홀의 가로 중심(px). 펀치홀이 없거나 알 수 없으면 -1. */
+    private static int cutoutCenterX(WindowManager wm) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R)
+            return -1;
+        try {
+            android.view.DisplayCutout dc = wm.getCurrentWindowMetrics().getWindowInsets().getDisplayCutout();
+            if (dc == null)
+                return -1;
+            android.graphics.Rect top = dc.getBoundingRectTop();
+            return top.isEmpty() ? -1 : top.centerX();
+        } catch (Throwable t) {
+            return -1;
         }
     }
 
