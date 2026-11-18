@@ -28,6 +28,7 @@ import com.dosse.airpods.notification.NotificationBuilder;
 import com.dosse.airpods.receivers.BluetoothListener;
 import com.dosse.airpods.receivers.BluetoothReceiver;
 import com.dosse.airpods.receivers.ScreenReceiver;
+import com.dosse.airpods.ui.IslandA11yService;
 import com.dosse.airpods.ui.IslandOverlay;
 import com.dosse.airpods.ui.MainActivity;
 import com.dosse.airpods.utils.DiagLog;
@@ -760,7 +761,14 @@ public class PodsService extends Service {
             DiagLog.add(this, "notification posted" + (islandShown ? " (no banner)" : ""));
             mShowWhat &= ~SHOW_NOTIF;
         }
-        // 화면이 꺼져 있어 못 띄운 아일랜드는 화면을 켤 때까지 보류
+        // 화면이 꺼져 있어 못 띄운 아일랜드: 접근성 서비스가 켜져 있으면 거기에 넘기고 이 서비스는 바로 접는다
+        // (포그라운드 서비스·제어 채널을 화면이 켜질 때까지 붙잡아 두지 않는다)
+        if ((mShowWhat & SHOW_ISLAND) != 0 && !screenOn && System.currentTimeMillis() < mDeferUntil
+                && IslandA11yService.deferIsland(mDeferUntil)) {
+            DiagLog.add(this, "island handed to accessibility: waits for screen on");
+            mShowWhat &= ~SHOW_ISLAND;
+        }
+        // 그 밖에 못 띄운 아일랜드는 이 서비스가 화면을 켤 때까지 보류
         if ((mShowWhat & SHOW_ISLAND) != 0) {
             if (System.currentTimeMillis() < mDeferUntil) {
                 stopScanner(); // 기다리는 동안 스캔은 하지 않는다
@@ -775,7 +783,8 @@ public class PodsService extends Service {
             mShowWhat = 0;
         }
         mShowFreshOnly = false;
-        stopLaterIfOnDemand();
+        // 접근성 서비스가 프로세스를 살려 두고 아일랜드 창도 그쪽에 붙어 있으니, 떠 있는 동안 버틸 필요가 없다
+        stopLaterIfOnDemand(IslandA11yService.isRunning() ? 0 : IslandOverlay.showMs(this) + 1500);
     }
 
     /**
@@ -783,15 +792,21 @@ public class PodsService extends Service {
      * 이후엔 에어팟 재연결 / 바로가기(루틴) / 앱·위젯 열기 때만 잠깐 다시 뜬다.
      */
     private void stopLaterIfOnDemand() {
+        stopLaterIfOnDemand(IslandOverlay.showMs(this) + 1500);
+    }
+
+    private void stopLaterIfOnDemand(long delayMs) {
         if (!isOnDemandEnabled(this) || sAppForeground > 0)
             return;
         mHandler.removeCallbacks(mStopIfDone);
-        mHandler.postDelayed(mStopIfDone, IslandOverlay.showMs(this) + 1500);
+        mHandler.postDelayed(mStopIfDone, delayMs);
     }
 
     private final Runnable mStopIfDone = () -> {
-        if (isOnDemandEnabled(this) && sAppForeground == 0 && !mAlertPending && mShowWhat == 0)
+        if (isOnDemandEnabled(this) && sAppForeground == 0 && !mAlertPending && mShowWhat == 0) {
+            DiagLog.add(this, "service stopped (on-demand)");
             stopSelf();
+        }
     };
 
     private String wearBody(PodsSnapshot s) {
