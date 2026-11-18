@@ -80,6 +80,9 @@ public class AacpManager {
     private volatile boolean mRunning = false;
     private volatile boolean mStopped = false; // stop() 이후엔 리스너를 부르지 않는다
 
+    /** 마지막 연결 실패/종료 이유 (진단 기록용) */
+    public volatile String lastError = "";
+
     public AacpManager(Listener listener) {
         mListener = listener;
     }
@@ -165,6 +168,7 @@ public class AacpManager {
                 parse(buf, n);
             }
         } catch (Throwable t) {
+            lastError = t.getClass().getSimpleName() + (t.getMessage() != null ? ": " + t.getMessage() : "");
             Logger.debug("AACP failed: " + t);
         } finally {
             notifyConnected(false);
@@ -173,13 +177,13 @@ public class AacpManager {
         }
     }
 
+    /**
+     * AACP 는 클래식(BR/EDR) L2CAP PSM 0x1001 이다. createInsecureL2capChannel 은 LE 연결 지향 채널이라
+     * 쓰지 않는다 — 에어팟이 받지 않아 실패할 뿐 아니라, 그 LE 연결 시도가 비콘 스캔을 밀어내고
+     * LE 링크 연결/해제 브로드캐스트를 일으켜 연결 시 표시를 망칠 수 있다.
+     */
     @SuppressWarnings("MissingPermission")
     private BluetoothSocket openSocket(BluetoothDevice device) throws Exception {
-        try {
-            return device.createInsecureL2capChannel(PSM);
-        } catch (Throwable t) {
-            Logger.debug("createInsecureL2capChannel failed, trying reflection: " + t);
-        }
         Object[][] specs = {
                 {device, 3, -1, true, true, PSM, APPLE_UUID},
                 {device, 3, true, true, PSM, APPLE_UUID},

@@ -16,6 +16,19 @@ public abstract class BluetoothReceiver extends BroadcastReceiver {
 
     public abstract void onDisconnect(BluetoothDevice bluetoothDevice);
 
+    /** LE 링크의 연결/해제라서 무시한 경우 (진단용) */
+    public void onLeLinkIgnored(BluetoothDevice device, String action) {
+    }
+
+    /**
+     * ACL 브로드캐스트가 LE 링크에 관한 것인가. 에어팟 연결 여부는 클래식 링크로만 판단한다 —
+     * 같은 기기의 LE 링크가 잠깐 붙었다 끊겨도 "연결/해제"로 착각하지 않게. (EXTRA_TRANSPORT 는 Android 13+)
+     */
+    public static boolean isLeLink(Intent intent) {
+        return intent.getIntExtra(BluetoothDevice.EXTRA_TRANSPORT, BluetoothDevice.TRANSPORT_AUTO)
+                == BluetoothDevice.TRANSPORT_LE;
+    }
+
     /**
      * When the service is created, we register to get as many bluetooth and airpods related events as possible.
      * ACL_CONNECTED and ACL_DISCONNECTED should have been enough, but you never know with android these days.
@@ -57,6 +70,11 @@ public abstract class BluetoothReceiver extends BroadcastReceiver {
 
         // Airpods filter
         if (bluetoothDevice != null && action != null && !action.isEmpty()) {
+            if (action.startsWith("android.bluetooth.device.action.ACL_") && isLeLink(intent)) {
+                onLeLinkIgnored(bluetoothDevice, action);
+                return;
+            }
+
             // Airpods connected, show notification.
             if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
                 onConnect(bluetoothDevice);

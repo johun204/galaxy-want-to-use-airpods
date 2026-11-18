@@ -25,6 +25,10 @@ public class AirPodsConnectionReceiver extends BroadcastReceiver {
         if (!SharedPreferencesUtils.isAutoOnConnect(context))
             return;
 
+        // 같은 기기의 LE 링크가 붙는 건 에어팟 연결이 아니다
+        if (BluetoothReceiver.isLeLink(intent))
+            return;
+
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
         if (!PodsService.isPods(device))
             return;

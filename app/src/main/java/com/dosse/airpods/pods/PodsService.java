@@ -244,8 +244,16 @@ public class PodsService extends Service {
             @Override
             public void onDisconnect(BluetoothDevice device) {
                 // 지금 보고 있는 그 기기가 끊겼을 때만 (다른 에어팟/Beats 해제에 반응하지 않게)
-                if (mDevice != null ? mDevice.equals(device) : isPods(device))
+                if (mDevice != null ? mDevice.equals(device) : isPods(device)) {
+                    DiagLog.add(PodsService.this, "ACL disconnected");
                     onPodsGone();
+                }
+            }
+
+            @Override
+            public void onLeLinkIgnored(BluetoothDevice device, String action) {
+                if (isPods(device))
+                    DiagLog.add(PodsService.this, "ignored LE link event: " + action.substring(action.lastIndexOf('.') + 1));
             }
         };
         try {
@@ -518,6 +526,8 @@ public class PodsService extends Service {
         if (status != PodsStatus.DISCONNECTED && !status.isAllDisconnected()) {
             mLastGoodStatus = status;
             mLastGoodAt = System.currentTimeMillis();
+            if (!mGotData)
+                DiagLog.add(this, "battery beacon received (rssi " + mRssi + ")");
             mGotData = true;
             PodsSnapshot.lastBeaconAt = mLastGoodAt;
         }
@@ -661,7 +671,8 @@ public class PodsService extends Service {
                 DiagLog.add(this, "island skipped: accessibility off");
             } else if (screenOn) {
                 islandShown = IslandOverlay.show(this, s);
-                DiagLog.add(this, islandShown ? "island shown" : "island failed: " + IslandOverlay.lastFailure);
+                DiagLog.add(this, islandShown ? "island shown (" + (aacpBatteryUsable() ? "control channel" : "beacon") + " value)"
+                        : "island failed: " + IslandOverlay.lastFailure);
             } else if (IslandA11yService.deferIsland(System.currentTimeMillis() + DEFER_MS)) {
                 DiagLog.add(this, "island handed to accessibility: waits for screen on");
             }
@@ -799,6 +810,8 @@ public class PodsService extends Service {
                     if (mDestroyed || gen != mAacpGen)
                         return;
                     mAacpConnected = connected;
+                    DiagLog.add(PodsService.this, connected ? "control channel connected"
+                            : "control channel down: " + (mAacp != null ? mAacp.lastError : ""));
                     if (!connected) {
                         mControls.clear();
                         retryAacp();
@@ -825,8 +838,11 @@ public class PodsService extends Service {
                     mAbL = lp; mAbLc = lc;
                     mAbR = rp; mAbRc = rc;
                     mAbC = cp; mAbCc = cc;
+                    if (mAacpBatAt == 0)
+                        DiagLog.add(PodsService.this, "battery from control channel");
                     mAacpBatAt = System.currentTimeMillis();
-                    if (lp >= 0 || rp >= 0 || cp >= 0)
+                    // 제어 채널 배터리를 쓰지 않는 설정이면 '값을 받았다'로 치지 않는다 (표시엔 비콘 값만 쓰므로)
+                    if (isAacpBatteryEnabled(PodsService.this) && (lp >= 0 || rp >= 0 || cp >= 0))
                         mGotData = true;
                     publish();
                     endScanEarlyIfAacp();
