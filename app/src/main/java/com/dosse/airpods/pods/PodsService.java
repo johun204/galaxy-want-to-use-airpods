@@ -744,7 +744,12 @@ public class PodsService extends Service {
             if (System.currentTimeMillis() < mDeferUntil) {
                 stopScanner(); // 기다리는 동안 스캔은 하지 않는다
                 mAlertPending = true;
-                mHandler.postDelayed(mFireShow, 30000); // 화면이 켜지면 리시버가 더 빨리 깨운다
+                // 화면이 켜져 있는데 잠금 화면이면 잠금이 풀리는 순간을 놓치지 않게 1초마다 다시 본다.
+                // (잠금 해제 신호를 받은 순간에도 잠금 화면이 아직 걷히는 중이라 "잠김"으로 보일 수 있다.)
+                // 화면이 꺼져 있으면 화면 켜짐 리시버가 깨우므로 30초 간격으로만.
+                android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+                boolean screenOn = pm == null || pm.isInteractive();
+                mHandler.postDelayed(mFireShow, screenOn ? 1000 : 30000);
                 return;
             }
             mShowWhat = 0;
