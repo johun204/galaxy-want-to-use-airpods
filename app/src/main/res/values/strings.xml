@@ -176,4 +176,13 @@
     <string name="cat_advanced">Battery source</string>
     <string name="conflict_on_demand">Not used in on-demand mode (no periodic refresh, no resident service)</string>
     <string name="warn_nothing_to_show">The island and the alert are both off, so nothing will be shown when AirPods connect</string>
+    <string name="a11y_label">AirPods battery island</string>
+    <string name="a11y_desc">Only used to draw the battery island above the lock screen and notification banners. It receives no accessibility events and does not read screen content.</string>
+    <string name="pref_island_a11y">Show via accessibility (recommended)</string>
+    <string name="pref_island_a11y_on">On — the island also appears on the lock screen and is never covered by notification banners.</string>
+    <string name="pref_island_a11y_off">Off — tap and turn on this app under Installed apps. The normal overlay is hidden on the lock screen, so the island only appears after unlocking. If the switch is greyed out: App info → ⋮ → Allow restricted settings.</string>
+    <string name="pref_diag">Display log</string>
+    <string name="pref_diag_desc">Recent connection and island events — check why the island did not appear</string>
+    <string name="pref_diag_empty">No records yet</string>
+    <string name="copy">Copy</string>
 </resources>

@@ -30,6 +30,7 @@ import com.dosse.airpods.receivers.BluetoothReceiver;
 import com.dosse.airpods.receivers.ScreenReceiver;
 import com.dosse.airpods.ui.IslandOverlay;
 import com.dosse.airpods.ui.MainActivity;
+import com.dosse.airpods.utils.DiagLog;
 import com.dosse.airpods.utils.Logger;
 import com.dosse.airpods.utils.PermissionUtils;
 import com.dosse.airpods.widget.PodsWidget;
@@ -423,6 +424,7 @@ public class PodsService extends Service {
         mDevice = device;
         startAacp();
         if (!wasConnected) {
+            DiagLog.add(this, fresh ? "AirPods connected" : "service up, AirPods already connected");
             openScanWindow(SETTLE_MS, true); // 연결 직후엔 항상 고속 — 표시가 늦지 않게
             // 연결당 1회: 설정에 따라 알림 / 아일랜드 (앱을 열어 둔 상태에서도 그대로 띄운다)
             int what = fresh && isAutoOnConnect(this)
@@ -436,6 +438,8 @@ public class PodsService extends Service {
     }
 
     private void onPodsGone() {
+        if (mMaybeConnected)
+            DiagLog.add(this, "AirPods disconnected");
         mMaybeConnected = false;
         mLastGoodStatus = null;
         mShowWhat = 0;
@@ -450,6 +454,8 @@ public class PodsService extends Service {
         if (mMaybeConnected)
             return;
         if (mShowWhat != 0) // 바로가기/루틴으로 불렀는데 연결된 에어팟이 없음
+            DiagLog.add(this, "shortcut: AirPods not connected");
+        if (mShowWhat != 0)
             android.widget.Toast.makeText(this, R.string.toast_not_connected, android.widget.Toast.LENGTH_SHORT).show();
         stopSelf();
     }
@@ -689,6 +695,8 @@ public class PodsService extends Service {
     private void requestShow(int what, boolean freshOnly) {
         mShowWhat |= what;
         mShowFreshOnly |= freshOnly;
+        DiagLog.add(this, "show requested:" + ((what & SHOW_ISLAND) != 0 ? " island" : "")
+                + ((what & SHOW_NOTIF) != 0 ? " notification" : "") + (freshOnly ? " (fresh value)" : ""));
         mAlertDeadline = System.currentTimeMillis() + SETTLE_MS;
         mDeferUntil = System.currentTimeMillis() + DEFER_MS;
         if (!mAlertPending) {
@@ -715,28 +723,41 @@ public class PodsService extends Service {
         if (!ready) {
             // 아직 연결 확인 전이거나 배터리 값을 못 받음 — 마감 시각 전이면 재시도
             if (System.currentTimeMillis() < mAlertDeadline) {
+                DiagLog.add(this, mMaybeConnected ? "waiting for battery value" : "waiting for connection");
                 if (mMaybeConnected && !mScanning)
                     openScanWindow(REFRESH_MS, true); // 값이 없을 때만, 대신 고속으로
                 mAlertPending = true;
                 mHandler.postDelayed(mFireShow, 2000);
                 return;
             }
+            DiagLog.add(this, "gave up: " + (mMaybeConnected ? "no battery value in 30s" : "not connected"));
             mShowWhat = 0;
             mShowFreshOnly = false;
             stopLaterIfOnDemand();
             return;
         }
-        // 아일랜드를 먼저 띄운다 (잠금 화면 위에는 오버레이가 보이지 않으니 잠금이 풀린 뒤에만)
+        // 아일랜드를 먼저 띄운다. 일반 오버레이는 잠금 화면에 가려지니 잠금이 풀린 뒤에만,
+        // 접근성 오버레이는 잠금 화면 위에도 보이니 화면만 켜져 있으면 바로.
+        android.os.PowerManager pmgr = getSystemService(android.os.PowerManager.class);
+        boolean screenOn = pmgr == null || pmgr.isInteractive();
         boolean islandShown = false;
-        if ((mShowWhat & SHOW_ISLAND) != 0 && isInteractive()) {
-            islandShown = IslandOverlay.show(this, s);
-            if (islandShown)
-                mShowWhat &= ~SHOW_ISLAND;
+        if ((mShowWhat & SHOW_ISLAND) != 0) {
+            if (isInteractive() || (screenOn && IslandOverlay.canShowOnLockScreen())) {
+                islandShown = IslandOverlay.show(this, s);
+                DiagLog.add(this, islandShown
+                        ? "island shown" + (IslandOverlay.canShowOnLockScreen() ? " (accessibility)" : " (overlay)")
+                        : "island failed: " + IslandOverlay.lastFailure);
+                if (islandShown)
+                    mShowWhat &= ~SHOW_ISLAND;
+            } else {
+                DiagLog.add(this, screenOn ? "island waiting: lock screen" : "island waiting: screen off");
+            }
         }
         // 알림은 알림함에 남으니 화면이 꺼져 있어도 지금 띄운다.
         // 단 아일랜드를 띄웠다면 헤즈업 배너가 화면 상단에서 아일랜드를 덮으므로 배너 없이 넣는다.
         if ((mShowWhat & SHOW_NOTIF) != 0) {
             showWearAlert(wearBody(s), islandShown);
+            DiagLog.add(this, "notification posted" + (islandShown ? " (no banner)" : ""));
             mShowWhat &= ~SHOW_NOTIF;
         }
         // 화면이 꺼져 있어 못 띄운 아일랜드는 화면을 켤 때까지 보류
@@ -747,11 +768,10 @@ public class PodsService extends Service {
                 // 화면이 켜져 있는데 잠금 화면이면 잠금이 풀리는 순간을 놓치지 않게 1초마다 다시 본다.
                 // (잠금 해제 신호를 받은 순간에도 잠금 화면이 아직 걷히는 중이라 "잠김"으로 보일 수 있다.)
                 // 화면이 꺼져 있으면 화면 켜짐 리시버가 깨우므로 30초 간격으로만.
-                android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
-                boolean screenOn = pm == null || pm.isInteractive();
                 mHandler.postDelayed(mFireShow, screenOn ? 1000 : 30000);
                 return;
             }
+            DiagLog.add(this, "island dropped: not shown within 10 min");
             mShowWhat = 0;
         }
         mShowFreshOnly = false;

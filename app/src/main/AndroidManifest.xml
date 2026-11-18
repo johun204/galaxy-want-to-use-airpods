@@ -101,6 +101,20 @@
             </intent-filter>
         </service>
 
+        <!-- 아일랜드를 잠금 화면·알림 배너 위 층에 띄우기 위한 접근성 서비스 (이벤트는 받지 않음) -->
+        <service
+            android:name=".ui.IslandA11yService"
+            android:exported="true"
+            android:label="@string/a11y_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/island_a11y" />
+        </service>
+
         <activity android:name=".ui.NoBTActivity" />
 
         <activity

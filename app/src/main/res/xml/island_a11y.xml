@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 이벤트 종류를 지정하지 않음 = 접근성 이벤트를 하나도 받지 않는다. 화면 내용도 읽지 않는다. -->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:description="@string/a11y_desc"
+    android:notificationTimeout="0" />

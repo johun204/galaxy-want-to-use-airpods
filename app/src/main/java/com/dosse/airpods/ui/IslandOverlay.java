@@ -37,13 +37,22 @@ public final class IslandOverlay {
     private static final Runnable HIDE = IslandOverlay::hide;
 
     private static View sView;
-    private static Context sCtx;
+    private static WindowManager sWm;   // 지금 떠 있는 뷰를 붙인 창 관리자 (접근성/일반 오버레이)
+
+    /** 마지막 show() 가 실패한 이유 (진단 기록용) */
+    public static String lastFailure = "";
 
     private IslandOverlay() {
     }
 
+    /** '다른 앱 위에 표시' 권한이 있거나 접근성 서비스가 켜져 있으면 띄울 수 있다 */
     public static boolean hasPermission(Context c) {
-        return Settings.canDrawOverlays(c);
+        return IslandA11yService.isRunning() || Settings.canDrawOverlays(c);
+    }
+
+    /** 잠금 화면 위에도 띄울 수 있는가 — 접근성 오버레이만 잠금 화면에 가려지지 않는다 */
+    public static boolean canShowOnLockScreen() {
+        return IslandA11yService.isRunning();
     }
 
     /** 화면에 떠 있는 시간 (설정값) */
@@ -54,21 +63,27 @@ public final class IslandOverlay {
     /** @return 실제로 화면에 붙였으면 true */
     public static boolean show(Context ctx, PodsSnapshot s) {
         Context app = ctx.getApplicationContext();
-        if (!hasPermission(app)) {
-            Logger.debug("island skipped: no overlay permission");
-            return false;
+        // 접근성 서비스가 켜져 있으면 그 창 관리자로 접근성 오버레이 층에 붙인다
+        Context host = IslandA11yService.instance();
+        boolean a11y = host != null;
+        if (!a11y) {
+            host = app;
+            if (!Settings.canDrawOverlays(app)) {
+                lastFailure = "no overlay permission";
+                return false;
+            }
         }
         if (!s.available) {
-            Logger.debug("island skipped: no battery data");
+            lastFailure = "no battery data";
             return false;
         }
         PowerManager pm = app.getSystemService(PowerManager.class);
         if (pm != null && !pm.isInteractive()) {
-            Logger.debug("island skipped: screen off");
+            lastFailure = "screen off";
             return false; // 화면이 꺼져 있으면 띄워도 못 본다
         }
         H.removeCallbacks(HIDE); // 이전 표시의 자동 숨김 타이머가 새 아일랜드를 지우지 않게
-        remove(sView);
+        remove(sView, sWm);
         sView = null;
         try {
             View v = LayoutInflater.from(app).inflate(R.layout.island, null);
@@ -77,7 +92,8 @@ public final class IslandOverlay {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.WRAP_CONTENT,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    a11y ? WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                            : WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                             | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                             // 상태바 영역까지 올라가도록 (펀치홀 카메라와 겹침).
@@ -85,11 +101,11 @@ public final class IslandOverlay {
                             | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                     PixelFormat.TRANSLUCENT);
             lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            WindowManager wm = app.getSystemService(WindowManager.class);
+            WindowManager wm = host.getSystemService(WindowManager.class);
             // 펀치홀이 가운데가 아닌 화면(폴드 내부 등)에선 카메라 쪽으로 옮긴다. 화면 밖으로는 나가지 않는다.
             final int cutoutX = cutoutCenterX(wm);
             if (cutoutX >= 0)
-                lp.x = cutoutX - wm.getCurrentWindowMetrics().getBounds().width() / 2;
+                lp.x = cutoutX - app.getResources().getDisplayMetrics().widthPixels / 2;
             lp.y = Math.round(6 * app.getResources().getDisplayMetrics().density); // 화면 맨 위에서 살짝 띄움
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R)
                 lp.setFitInsetsTypes(0); // 시스템 바 인셋만큼 밀려나지 않게
@@ -106,7 +122,8 @@ public final class IslandOverlay {
 
             wm.addView(v, lp);
             sView = v;
-            sCtx = app;
+            sWm = wm;
+            lastFailure = "";
 
             // 첫 레이아웃이 끝나야 폭을 안다 → 그때 상단 중앙(펀치홀)을 기준으로 커진다
             v.setScaleX(START_SCALE);
@@ -132,6 +149,7 @@ public final class IslandOverlay {
             return true;
         } catch (Throwable t) {
             Logger.error(t);
+            lastFailure = (a11y ? "a11y " : "") + t.getClass().getSimpleName() + ": " + t.getMessage();
             return false;
         }
     }
@@ -154,20 +172,21 @@ public final class IslandOverlay {
     /** 상단 중앙으로 모이며 사라진다. */
     public static void hide() {
         View v = sView;
+        WindowManager wm = sWm;
         if (v == null)
             return;
         sView = null;
         H.removeCallbacks(HIDE);
         v.animate().alpha(0f).scaleX(START_SCALE).scaleY(START_SCALE)
                 .setDuration(OUT_MS).setInterpolator(new AccelerateInterpolator())
-                .withEndAction(() -> remove(v)).start();
+                .withEndAction(() -> remove(v, wm)).start();
     }
 
-    private static void remove(View v) {
-        if (v == null || sCtx == null)
+    private static void remove(View v, WindowManager wm) {
+        if (v == null || wm == null)
             return;
         try {
-            sCtx.getSystemService(WindowManager.class).removeView(v);
+            wm.removeView(v);
         } catch (Throwable ignored) {
         }
     }

@@ -81,9 +81,52 @@ public class SettingsActivity extends AppCompatActivity {
                 return true;
             });
 
+            getPreference("island_a11y").setOnPreferenceClickListener(pref -> {
+                try {
+                    startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                } catch (Throwable ignored) {
+                }
+                return true;
+            });
+            getPreference("diag_log").setOnPreferenceClickListener(pref -> {
+                showDiagDialog(pref.getContext());
+                return true;
+            });
+
             getPreference("about").setSummary(String.format("%s v%s", getString(R.string.app_name), BuildConfig.VERSION_NAME));
 
             applyConflicts();
+        }
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            // 접근성 설정에서 돌아왔을 때 상태 반영
+            Preference p = getPreference("island_a11y");
+            if (p != null)
+                p.setSummary(IslandA11yService.isRunning() ? R.string.pref_island_a11y_on : R.string.pref_island_a11y_off);
+        }
+
+        private void showDiagDialog(Context ctx) {
+            String log = com.dosse.airpods.utils.DiagLog.read(ctx);
+            TextView tv = new TextView(ctx);
+            tv.setText(log.isEmpty() ? getString(R.string.pref_diag_empty) : log);
+            tv.setTextIsSelectable(true);
+            tv.setTypeface(android.graphics.Typeface.MONOSPACE);
+            tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+            int pad = (int) (16 * getResources().getDisplayMetrics().density);
+            tv.setPadding(pad, pad, pad, 0);
+            ScrollView sv = new ScrollView(ctx);
+            sv.addView(tv);
+            new AlertDialog.Builder(ctx)
+                    .setTitle(R.string.pref_diag)
+                    .setView(sv)
+                    .setPositiveButton(android.R.string.ok, null)
+                    .setNeutralButton(R.string.copy, (d, w) -> {
+                        android.content.ClipboardManager cm = ctx.getSystemService(android.content.ClipboardManager.class);
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("diag", log));
+                    })
+                    .show();
         }
 
         // ---------------- 설정 충돌 방어 ----------------

@@ -15,6 +15,13 @@
             app:iconSpaceReserved="false"
             app:singleLineTitle="false" />
 
+        <Preference
+            android:dependency="island_enabled"
+            android:key="island_a11y"
+            android:title="@string/pref_island_a11y"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
+
         <ListPreference
             android:defaultValue="3"
             android:dependency="island_enabled"
@@ -132,6 +139,13 @@
     <PreferenceCategory
         android:title="@string/general_category"
         app:iconSpaceReserved="false">
+
+        <Preference
+            android:key="diag_log"
+            android:summary="@string/pref_diag_desc"
+            android:title="@string/pref_diag"
+            app:iconSpaceReserved="false"
+            app:singleLineTitle="false" />
 
         <Preference
             android:key="restartService"

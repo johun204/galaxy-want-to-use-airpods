@@ -149,4 +149,13 @@
     <string name="cat_advanced">배터리 수신 방식</string>
     <string name="conflict_on_demand">온디맨드 모드에서는 사용하지 않습니다 (주기 갱신·상주 없음)</string>
     <string name="warn_nothing_to_show">아일랜드와 알림이 모두 꺼져 있어 연결해도 아무 것도 표시되지 않습니다</string>
+    <string name="a11y_label">에어팟 배터리 아일랜드</string>
+    <string name="a11y_desc">배터리 아일랜드를 잠금 화면과 알림 배너 위에 띄우는 데만 씁니다. 접근성 이벤트를 받지 않고 화면 내용을 읽지 않습니다.</string>
+    <string name="pref_island_a11y">접근성으로 표시 (권장)</string>
+    <string name="pref_island_a11y_on">켜짐 — 잠금 화면에서도 아일랜드가 뜨고, 알림 배너에 가려지지 않습니다.</string>
+    <string name="pref_island_a11y_off">꺼짐 — 눌러서 설치된 앱에서 이 앱을 켜세요. 일반 오버레이는 잠금 화면에 가려져 잠금을 푼 뒤에만 뜹니다. 스위치가 회색으로 막혀 있으면: 앱 정보 → ⋮ → 제한된 설정 허용.</string>
+    <string name="pref_diag">표시 기록</string>
+    <string name="pref_diag_desc">최근 연결·아일랜드 표시 과정 — 아일랜드가 안 뜬 이유 확인용</string>
+    <string name="pref_diag_empty">아직 기록이 없습니다</string>
+    <string name="copy">복사</string>
 </resources>
