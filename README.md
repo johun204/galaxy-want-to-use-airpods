@@ -81,6 +81,14 @@
 
 > **v1.18부터 고정 릴리스 키로 서명합니다.** v1.17 이하(디버그 키 서명)가 깔려 있으면 덮어 설치되지 않으니, 기존 앱을 한 번 삭제한 뒤 설치하세요. 이후 버전은 그대로 업데이트됩니다.
 
+## 아이콘·일러스트
+앱 아이콘, 로고, 에어팟/Pro/Max/케이스 일러스트는 실제 에어팟 형태를 본뜬 로우 폴리 디자인이며 `tools/lowpoly/gen.py` 로 생성합니다(생성된 XML/PNG 는 직접 고치지 말고 생성기를 수정).
+```
+uv venv .venv && uv pip install -p .venv numpy scipy shapely pillow
+.venv/bin/python tools/lowpoly/gen.py app/src/main/res
+```
+로고 글꼴로 macOS 의 Apple SD Gothic Neo 를 씁니다.
+
 ## 빌드
 ```
 ./gradlew assembleRelease
