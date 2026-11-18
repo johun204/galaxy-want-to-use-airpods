@@ -45,34 +45,17 @@
     <string name="settings" tools:ignore="MissingTranslation">Settings</string>
     <string name="batterySaver">Battery saver (Not recommended)</string>
     <string name="batterySaver_desc">Enable this if Bluetooth uses a lot of battery</string>
-    <string name="restart" tools:ignore="MissingTranslation">Restart Service</string>
-    <string name="restart_desc" tools:ignore="MissingTranslation">Do this if the notification is not showing</string>
 
     <string name="feature_category">Features</string>
-    <string name="battery_category">Battery</string>
     <string name="general_category">General</string>
 
     <string name="perm_warning">Some permissions are missing, so battery detection and notifications may not work. Tap to grant.</string>
     <string name="perm_warning_btn">Grant permissions</string>
 
-    <string name="pref_scan_saver">Scan saver while screen off / locked</string>
-    <string name="pref_scan_saver_desc">While the screen is off or on the lock screen, battery-refresh scans are skipped entirely. This takes priority over the refresh interval below. The moment you unlock, if more time has passed than the refresh interval, the battery refreshes right away.</string>
-    <string name="pref_battery_refresh">Battery refresh interval</string>
-    <string name="pref_battery_refresh_dialog">While the app is open the battery is scanned continuously. When it is closed, it scans briefly on this interval instead. Between scans the last known value is shown. Turning the screen on or unlocking also triggers a quick refresh; if "scan saver" above is on, the interval is ignored while the screen is off or locked.\n\n⚠ Intervals under 1 minute keep Bluetooth scanning almost constantly and noticeably increase phone battery drain.</string>
-    <string name="refresh_5s">Every 5 seconds  ⚠</string>
-    <string name="refresh_15s">Every 15 seconds  ⚠</string>
-    <string name="refresh_30s">Every 30 seconds  ⚠</string>
-    <string name="refresh_1min">Every 1 minute</string>
-    <string name="refresh_3min">Every 3 minutes</string>
-    <string name="refresh_5min">Every 5 minutes</string>
-    <string name="pref_fast_scan">Fast scan on periodic refresh too</string>
-    <string name="pref_fast_scan_desc">Periodic refresh scans also run at full speed for their first 15 seconds. Turn off to avoid that extra power use. Right after AirPods connect the app always scans at full speed regardless of this setting.</string>
     <string name="pref_aacp">Hardware control channel</string>
     <string name="pref_aacp_desc">Keeps a separate control link (L2CAP) to the AirPods so noise control, ear detection, conversation awareness and other settings can be read and changed. If you only need the battery display, turn this off to save the power and connection overhead of that always-on link. The items on the "AirPods settings" screen will then be hidden.</string>
     <string name="pref_aacp_battery">Read battery over the control channel</string>
-    <string name="pref_aacp_battery_desc">The default battery display reads the Bluetooth advertisement (beacon) the AirPods broadcast nearby. That beacon carries no device identifier and its MAC address keeps rotating, so if someone next to you is also using AirPods there is no way to be completely sure which reading is yours, and when the screen is off and scan saver kicks in the value arrives late.\n\nWith this on, whenever the "Hardware control channel" above is connected the battery is requested directly over that channel. The channel is established only with the exact AirPods paired to this phone, so readings can never be mixed up, and left/right/case levels come through even while Bluetooth scanning is off.\n\nOn devices where the control channel does not connect (unsupported model, failed link) it automatically falls back to the beacon method. Requires the "Hardware control channel" above to be on.</string>
-    <string name="notif_persistent">Battery detail in notification</string>
-    <string name="notif_persistent_desc">Off: show a minimal notification instead of L / R / case detail</string>
+    <string name="pref_aacp_battery_desc">The default battery display reads the Bluetooth advertisement (beacon) the AirPods broadcast nearby. That beacon carries no device identifier and its MAC address keeps rotating, so if someone next to you is also using AirPods there is no way to be completely sure which reading is yours.\n\nWith this on, whenever the "Hardware control channel" above is connected the battery is requested directly over that channel. The channel is established only with the exact AirPods paired to this phone, so readings can never be mixed up, and left/right/case levels come through even while Bluetooth scanning is off.\n\nOn devices where the control channel does not connect (unsupported model, failed link) it automatically falls back to the beacon method. Requires the "Hardware control channel" above to be on.</string>
     <string name="notif_wear">Battery alert when worn</string>
     <string name="notif_wear_desc">Show a notification each time you put the AirPods in</string>
     <string name="pref_wear_sound">Alert sound</string>
@@ -146,10 +129,7 @@
     <string name="github_url" translatable="false">https://github.com/adolfintel/OpenPods</string>
     <string name="donate_url" translatable="false">https://paypal.me/sineisochronic</string>
     <string name="pref_island">Dynamic island</string>
-    <string name="pref_island_desc">When AirPods connect (or when you run the shortcut), a pill with the AirPods and their battery slides in at the top of the screen for a few seconds. Needs the "display over other apps" permission.</string>
-    <string name="pref_island_permission">Grant "display over other apps" permission</string>
-    <string name="pref_on_demand">On-demand mode (no background residency)</string>
-    <string name="pref_on_demand_desc">Once the alert / island has been shown, the app shuts itself down completely instead of staying in the background. Battery is then read again only on reconnect, from a shortcut (Galaxy Routines) or when you open the app or tap the widget. The persistent notification and periodic refresh are disabled while this is on.</string>
+    <string name="pref_island_desc">When AirPods connect (or when you run the shortcut), a pill with the AirPods and their battery slides in at the top of the screen for a few seconds. Drawn by the app\'s accessibility service, so it also appears on the lock screen.</string>
     <string name="shortcut_island">Battery dynamic island</string>
     <string name="shortcut_island_long">Show the battery dynamic island</string>
     <string name="shortcut_alert">Battery alert</string>
@@ -171,16 +151,18 @@
     <string name="perm_needed">Allow the %1$s permission first</string>
     <string name="perm_name_notif">Notifications</string>
     <string name="perm_name_bt">Nearby devices</string>
-    <string name="perm_name_overlay">Display over other apps</string>
+    <string name="perm_name_a11y">Accessibility</string>
+    <string name="a11y_ask_title">Turn on accessibility</string>
+    <string name="a11y_ask_msg">The battery island is drawn by this app\'s accessibility service. Turn on "AirPods battery island" under Installed apps.\n\nIt receives no accessibility events and does not read screen content.\n\nIf the switch is greyed out: App info → ⋮ → Allow restricted settings.</string>
+    <string name="a11y_ask_open">Open accessibility settings</string>
     <string name="cat_display">Display</string>
     <string name="cat_advanced">Battery source</string>
-    <string name="conflict_on_demand">Not used in on-demand mode (no periodic refresh, no resident service)</string>
     <string name="warn_nothing_to_show">The island and the alert are both off, so nothing will be shown when AirPods connect</string>
     <string name="a11y_label">AirPods battery island</string>
     <string name="a11y_desc">Only used to draw the battery island above the lock screen and notification banners. It receives no accessibility events and does not read screen content.</string>
-    <string name="pref_island_a11y">Show via accessibility (recommended)</string>
+    <string name="pref_island_a11y">Accessibility permission</string>
     <string name="pref_island_a11y_on">On — the island also appears on the lock screen and is never covered by notification banners.</string>
-    <string name="pref_island_a11y_off">Off — tap and turn on this app under Installed apps. The normal overlay is hidden on the lock screen, so the island only appears after unlocking. If the switch is greyed out: App info → ⋮ → Allow restricted settings.</string>
+    <string name="pref_island_a11y_off">Off — the island cannot be shown. Tap and turn on this app under Installed apps. If the switch is greyed out: App info → ⋮ → Allow restricted settings.</string>
     <string name="pref_diag">Display log</string>
     <string name="pref_diag_desc">Recent connection and island events — check why the island did not appear</string>
     <string name="pref_diag_empty">No records yet</string>

@@ -44,12 +44,9 @@
     <string name="settings" tools:ignore="MissingTranslation">Nastavení</string>
     <string name="batterySaver">Spořič baterie (nedoporučeno)</string>
     <string name="batterySaver_desc">Povolte pokud Bluetooth spotřebovává velké množství baterie</string>
-    <string name="restart" tools:ignore="MissingTranslation">Službu restartujte</string>
-    <string name="restart_desc" tools:ignore="MissingTranslation">Udělejte to v případě, že se oznámení nezobrazuje</string>
 
     <string name="about">O developerovi</string>
     <string name="about_dev">Vytvořili společně Federico Dossena a Itai Levin</string>
     <string name="website">webová stránka</string>
     <string name="donate">Darujte</string>
-
 </resources>

@@ -44,8 +44,6 @@
     <string name="settings">Настройки</string>
     <string name="batterySaver">Режим энергосбережения (не рекомендуется)</string>
     <string name="batterySaver_desc">Включите, если Bluetooth использует слишком много ресурсов</string>
-    <string name="restart" tools:ignore="MissingTranslation">Перезапуск службы</string>
-    <string name="restart_desc" tools:ignore="MissingTranslation">На случай если уведомление не показывается</string>
 
     <string name="about">О приложении</string>
     <string name="about_dev">Разработано Federico Dossena и Itai Levin</string>

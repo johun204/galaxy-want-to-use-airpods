@@ -44,12 +44,9 @@
     <string name="settings">Einstellungen</string>
     <string name="batterySaver">Stromsparmodus (nicht empfohlen)</string>
     <string name="batterySaver_desc">Aktiviere diesen Modus, wenn Bluetooth zu viel Akkuleistung erfordert</string>
-    <string name="restart" tools:ignore="MissingTranslation">Dienst neu starten</string>
-    <string name="restart_desc" tools:ignore="MissingTranslation">Wähle dies, wenn die Benachrichtigung nicht angezeigt wird</string>
 
     <string name="about">Über</string>
     <string name="about_dev">Entwickelt von Federico Dossena und Itai Levin</string>
     <string name="website">Webseite</string>
     <string name="donate">Spenden</string>
-
 </resources>

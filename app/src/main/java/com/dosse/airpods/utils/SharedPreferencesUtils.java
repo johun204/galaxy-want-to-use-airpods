@@ -9,11 +9,6 @@ public class SharedPreferencesUtils {
         return PreferenceManager.getDefaultSharedPreferences(c).getBoolean(key, def);
     }
 
-    // 알림에 배터리 상세 표시 (기본 켜짐)
-    public static boolean isPersistentNotificationEnabled(Context c) {
-        return b(c, "notif_persistent", true);
-    }
-
     // 연결 시 배터리 알림 1회 (기본 켜짐)
     public static boolean isWearAlertEnabled(Context c) {
         return b(c, "notif_wear", true);
@@ -50,21 +45,6 @@ public class SharedPreferencesUtils {
         }
     }
 
-    // 온디맨드 모드: 표시할 걸 띄운 뒤 서비스를 종료해 백그라운드 상주를 없앰 (기본 켜짐)
-    public static boolean isOnDemandEnabled(Context c) {
-        return b(c, "on_demand", true);
-    }
-
-    // 화면 꺼짐/잠금 시 스캔 절전 — 배터리 갱신 주기보다 우선 (기본 켜짐)
-    public static boolean isScanSaverEnabled(Context c) {
-        return b(c, "scan_saver", true);
-    }
-
-    // 연결 직후 고속 스캔 (기본 켜짐)
-    public static boolean isFastScanOnConnect(Context c) {
-        return b(c, "fast_scan", true);
-    }
-
     // 하드웨어 제어 채널(AACP/L2CAP) 사용 (기본 켜짐)
     public static boolean isAacpEnabled(Context c) {
         return b(c, "aacp_enabled", true);
@@ -75,13 +55,4 @@ public class SharedPreferencesUtils {
         return b(c, "aacp_battery", true);
     }
 
-    // 배터리 갱신 주기(초). 기본 180초(3분). 5/15/30/60/180/300 중 하나.
-    public static int batteryRefreshSeconds(Context c) {
-        String v = PreferenceManager.getDefaultSharedPreferences(c).getString("battery_refresh", "180");
-        try {
-            return Integer.parseInt(v);
-        } catch (Exception e) {
-            return 180;
-        }
-    }
 }

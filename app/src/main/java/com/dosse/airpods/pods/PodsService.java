@@ -24,10 +24,8 @@ import android.os.ParcelUuid;
 import androidx.core.app.NotificationCompat;
 
 import com.dosse.airpods.R;
-import com.dosse.airpods.notification.NotificationBuilder;
 import com.dosse.airpods.receivers.BluetoothListener;
 import com.dosse.airpods.receivers.BluetoothReceiver;
-import com.dosse.airpods.receivers.ScreenReceiver;
 import com.dosse.airpods.ui.IslandA11yService;
 import com.dosse.airpods.ui.IslandOverlay;
 import com.dosse.airpods.ui.MainActivity;
@@ -39,33 +37,22 @@ import com.dosse.airpods.widget.PodsWidget;
 import java.util.Locale;
 import java.util.Objects;
 
-import static com.dosse.airpods.notification.NotificationBuilder.NOTIFICATION_ID;
-import static com.dosse.airpods.notification.NotificationBuilder.TAG;
-import static com.dosse.airpods.utils.SharedPreferencesUtils.batteryRefreshSeconds;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isAacpBatteryEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isAacpEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isAutoOnConnect;
-import static com.dosse.airpods.utils.SharedPreferencesUtils.isFastScanOnConnect;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isIslandEnabled;
-import static com.dosse.airpods.utils.SharedPreferencesUtils.isOnDemandEnabled;
-import static com.dosse.airpods.utils.SharedPreferencesUtils.isPersistentNotificationEnabled;
-import static com.dosse.airpods.utils.SharedPreferencesUtils.isScanSaverEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isWearAlertEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isWearSoundEnabled;
 import static com.dosse.airpods.utils.SharedPreferencesUtils.isWearVibrateEnabled;
 
 /**
- * AirPods가 연결돼 있는 동안에만 살아있는 서비스.
+ * 필요할 때만 몇 초 도는 서비스 (상주하지 않는다).
  * <p>
- * 배터리 효율:
- * - 앱 화면이 앞에 떠 있는 동안엔 비콘을 연속 스캔한다.
- * - 앱이 닫히면 듀티 사이클: 연결 직후 30초 창 + 이후 설정 주기(5초~5분)마다 10초 창만.
- *   화면 꺼짐/잠금 시엔 스캔 절전 옵션에 따라 주기 스캔을 건너뛰고, 잠금 해제 시 따라잡는다.
- * - 스캔 창 사이에는 마지막으로 받은 배터리 값을 그대로 보여준다. 매 비콘이 좌/우/케이스를 통째로 교체한다.
- * - AirPods가 끊기면 서비스는 스스로 종료. 다시 연결되면 매니페스트의 AirPodsConnectionReceiver 가 되살린다.
- * - 배터리 알림은 연결당 1회.
- * - 온디맨드 모드(기본): 알림/아일랜드를 한 번 띄운 뒤 서비스를 아예 종료한다. 이후엔
- *   재연결 / 바로가기(갤럭시 루틴) / 앱·위젯을 열 때만 몇 초 동안 다시 돈다.
+ * - 에어팟이 연결되면 매니페스트의 AirPodsConnectionReceiver 가 깨운다 → 배터리 값을 읽고
+ *   알림/아일랜드를 한 번 띄운 뒤 바로 종료한다.
+ * - 그 밖엔 바로가기(갤럭시 루틴) / 앱·위젯을 열 때만 잠깐 돈다. 앱 화면이 앞에 있는 동안엔 비콘을 연속 스캔한다.
+ * - 아일랜드는 접근성 서비스(IslandA11yService)가 그린다. 화면이 꺼져 있으면 그쪽에 넘기고 이 서비스는 기다리지 않는다.
+ * - 마지막 배터리 값은 위젯/앱에 남겨 둔다.
  */
 public class PodsService extends Service {
     public static final String ACTION_SET_ANC = "com.dosse.airpods.SET_ANC";
@@ -145,15 +132,18 @@ public class PodsService extends Service {
         }
     }
 
+    private static final String TAG = "AirPods";            // 서비스 알림 채널 id
+    private static final int NOTIFICATION_ID = 1;
     private static final int WEAR_NOTIFICATION_ID = 2;
 
     private static final long SETTLE_MS = 30000;       // 연결 직후 스캔 창
     private static final long REFRESH_MS = 10000;      // 주기적 갱신 스캔 창
     private static final long FAST_HEAD_MS = 15000;    // 창 시작 후 이 시간 동안은 고속 스캔
-    private static final long ONDEMAND_MIN_GAP = 45000;// 화면 on/앱 열기 즉석 갱신 최소 간격
+    private static final long ONDEMAND_MIN_GAP = 45000;// 앱·위젯 열기 즉석 갱신 최소 간격
     private static final long WEAR_SETTLE_MS = 1500;   // 연결 후 알림까지 데이터 안정 대기
     private static final long WATCHDOG_INTERVAL = 60000;
     private static final long DEFER_MS = 600000;       // 화면 꺼짐 상태에서 아일랜드를 미뤄 두는 최대 시간 (10분)
+    private static final long IDLE_STOP_MS = 4500;     // 띄울 게 없을 때 값을 읽을 여유를 주고 접는 시간
     private static final long WEAR_TIMEOUT_MS = 600000;// 배터리 알림이 알림함에 남아 있는 시간 (10분)
     private static final long CACHE_OK_MS = 120000;    // 바로가기/루틴이 스캔 없이 써도 되는 캐시 값의 최대 나이
     private static final long AACP_RETRY_MS = 1500;    // 제어 채널 연결 실패 후 재시도 간격
@@ -183,7 +173,6 @@ public class PodsService extends Service {
     private int mShowWhat = 0;                   // 아직 띄우지 못한 표시 요청 (SHOW_* 비트)
     private boolean mAlertPending = false;
     private long mAlertDeadline = 0;             // 이 시각까지만 알림 발화 재시도
-    private long mDeferUntil = 0;                // 화면이 꺼져 있을 때 아일랜드를 미뤄 둘 시한
     private boolean mShowFreshOnly = false;      // 대기 중인 표시 요청이 캐시 값을 쓰면 안 됨 (새 연결)
 
     private BluetoothDevice mDevice;
@@ -198,12 +187,10 @@ public class PodsService extends Service {
     private long mAacpBatAt = 0;
     private final java.util.HashMap<Integer, Integer> mControls = new java.util.HashMap<>();
 
-    private NotificationBuilder mBuilder;
     private NotificationManager mNM;
     private Handler mHandler;
 
     private BroadcastReceiver mBtReceiver;
-    private BroadcastReceiver mScreenReceiver;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -216,7 +203,6 @@ public class PodsService extends Service {
         super.onCreate();
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
         createChannels();
-        mBuilder = new NotificationBuilder(this);
         mHandler = new Handler(Looper.getMainLooper());
 
         // 권한이 없거나 백그라운드에서 되살아난 경우 startForeground 가 예외를 던진다 — 죽지 말고 접는다
@@ -288,30 +274,6 @@ public class PodsService extends Service {
             }, BluetoothProfile.HEADSET);
         }
 
-        // 화면 켜짐/잠금 해제 → 즉석 갱신. 절전 옵션 켜지고 화면 꺼지면 예약 스캔 취소.
-        mScreenReceiver = new ScreenReceiver() {
-            @Override
-            public void onStart() { // 화면 켜짐 (아직 잠금일 수 있음)
-                onScreenInteractive();
-            }
-
-            @Override
-            public void onUnlock() { // 잠금 해제
-                onScreenInteractive();
-            }
-
-            @Override
-            public void onStop() { // 화면 꺼짐
-                if (isScanSaverEnabled(PodsService.this))
-                    mHandler.removeCallbacks(mReopenWindow);
-            }
-        };
-        try {
-            registerReceiver(mScreenReceiver, ScreenReceiver.buildFilter());
-        } catch (Throwable t) {
-            Logger.error(t);
-        }
-
         // 아무 것도 연결 안 돼 있으면 잠깐 뒤 종료
         mHandler.postDelayed(this::stopIfIdle, 4000);
         mHandler.postDelayed(mWatchdog, WATCHDOG_INTERVAL);
@@ -340,9 +302,9 @@ public class PodsService extends Service {
         } else if (ACTION_APP_BACKGROUND.equals(action)) {
             if (sAppForeground == 0) {
                 if (mScanning)
-                    mHandler.postDelayed(mEndWindow, REFRESH_MS); // 잠깐 더 스캔 후 듀티 사이클 복귀
+                    mHandler.postDelayed(mEndWindow, REFRESH_MS); // 잠깐 더 스캔한 뒤 접는다
                 else
-                    stopLaterIfOnDemand();
+                    stopLater(IDLE_STOP_MS);
             }
         } else if (action != null && mAacp != null) {
             switch (action) {
@@ -398,15 +360,11 @@ public class PodsService extends Service {
             unregisterReceiver(mBtReceiver);
         } catch (Throwable ignored) {
         }
-        try {
-            unregisterReceiver(mScreenReceiver);
-        } catch (Throwable ignored) {
-        }
         mNM.cancel(NOTIFICATION_ID);
         // 배터리 알림(WEAR_NOTIFICATION_ID)은 지우지 않는다 — 서비스가 내려가도 알림함에 남아야 한다
         if (!ran) // 권한 없음 등으로 시작도 못 한 경우 — 스냅샷은 건드리지 않는다
             return;
-        // 온디맨드 모드에선 연결된 채로 서비스만 내려간다 — 마지막 배터리 값은 위젯/앱에 남겨둔다
+        // 연결된 채로 서비스만 내려가는 게 보통이다 — 마지막 배터리 값은 위젯/앱에 남겨둔다
         if (!mMaybeConnected)
             setLast(new PodsSnapshot());
         broadcastSnapshot();
@@ -434,7 +392,7 @@ public class PodsService extends Service {
             if (what != 0)
                 requestShow(what, true); // 지난 연결 때의 값이 아니라 이번에 읽은 값으로
             else
-                stopLaterIfOnDemand();
+                stopLater(IDLE_STOP_MS);
         }
     }
 
@@ -461,7 +419,7 @@ public class PodsService extends Service {
         stopSelf();
     }
 
-    // ---------------- 스캔 창 (듀티 사이클) ----------------
+    // ---------------- 스캔 창 ----------------
 
     // 앱/위젯이 요청한 즉석 갱신. 너무 잦으면 무시.
     private void requestRefresh() {
@@ -472,46 +430,15 @@ public class PodsService extends Service {
         openScanWindow(REFRESH_MS);
     }
 
-    // 화면이 켜졌거나 잠금이 풀린 순간.
-    private void onScreenInteractive() {
-        // 화면이 꺼져 있어서 미뤄 둔 아일랜드가 있으면 지금 띄운다
-        if (mShowWhat != 0) {
-            mHandler.removeCallbacks(mFireShow);
-            mHandler.post(mFireShow);
-        }
-        if (!mMaybeConnected || mScanning)
-            return;
-        // 절전 옵션 + 아직 잠금 화면 → 무시
-        if (isScanSaverEnabled(this) && !isInteractive())
-            return;
-        long since = System.currentTimeMillis() - mLastScanEndAt;
-        // 갱신 주기를 넘겼으면(또는 즉석 갱신 최소 간격 경과) 바로 스캔
-        if (since >= batteryRefreshSeconds(this) * 1000L || since >= ONDEMAND_MIN_GAP)
-            openScanWindow(REFRESH_MS);
-    }
-
-    // 화면이 켜져 있고 잠금도 풀린 상태인가
-    private boolean isInteractive() {
-        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
-        android.app.KeyguardManager km = getSystemService(android.app.KeyguardManager.class);
-        boolean screenOn = pm == null || pm.isInteractive();
-        boolean locked = km != null && km.isKeyguardLocked();
-        return screenOn && !locked;
-    }
-
     private void openScanWindow(long durationMs) {
-        openScanWindow(durationMs, isFastScanOnConnect(this));
+        openScanWindow(durationMs, true);
     }
 
-    /**
-     * @param forceFast 연결 직후처럼 "지금 당장 값이 필요한" 순간엔 절전 설정과 무관하게 고속 스캔.
-     *                  절전 옵션들은 주기적 갱신에만 적용된다.
-     */
+    /** @param forceFast 처음 이 시간 동안 고속 스캔 (값이 빨리 필요할 때) */
     private void openScanWindow(long durationMs, boolean forceFast) {
         if (!mMaybeConnected)
             return;
         mHandler.removeCallbacks(mEndWindow);
-        mHandler.removeCallbacks(mReopenWindow);
         // 같은 주기로 제어 채널에도 배터리 재요청 (연결돼 있으면)
         if (mAacp != null && isAacpBatteryEnabled(this))
             mAacp.requestBattery();
@@ -527,25 +454,14 @@ public class PodsService extends Service {
 
     private final Runnable mFireShow = this::fireShow;
 
-    private final Runnable mReopenWindow = () -> openScanWindow(REFRESH_MS);
-
     private final Runnable mEndWindow = () -> {
         if (sAppForeground > 0)
             return; // 앱이 열려 있는 동안엔 계속 스캔
         stopScanner();
         mLastScanEndAt = System.currentTimeMillis();
-        if (!mMaybeConnected)
-            return;
-        // 온디맨드 모드는 주기 스캔 자체를 하지 않는다 — 여기서 서비스를 접는다
-        // (아직 띄우지 못한 알림/아일랜드가 있으면 그게 끝난 뒤에 접힌다)
-        if (isOnDemandEnabled(this)) {
-            stopLaterIfOnDemand(); // 바로 접지 않는다 — 방금 띄운 아일랜드가 떠 있을 수 있다
-            return;
-        }
-        // 절전 옵션 + 화면 꺼짐/잠금 → 다음 주기 스캔을 예약하지 않음 (잠금 해제 시 따라잡음)
-        if (isScanSaverEnabled(this) && !isInteractive())
-            return;
-        mHandler.postDelayed(mReopenWindow, batteryRefreshSeconds(this) * 1000L);
+        // 주기 스캔은 없다 — 여기서 서비스를 접는다 (아직 띄우지 못한 알림/아일랜드가 있으면 그게 끝난 뒤에)
+        if (mMaybeConnected)
+            stopLater(0);
     };
 
     @SuppressLint("MissingPermission")
@@ -642,7 +558,6 @@ public class PodsService extends Service {
             setLast(snap);
             broadcastSnapshot();
             PodsWidget.updateAll(this);
-            mNM.notify(NOTIFICATION_ID, buildFgNotification());
         }
     }
 
@@ -699,7 +614,6 @@ public class PodsService extends Service {
         DiagLog.add(this, "show requested:" + ((what & SHOW_ISLAND) != 0 ? " island" : "")
                 + ((what & SHOW_NOTIF) != 0 ? " notification" : "") + (freshOnly ? " (fresh value)" : ""));
         mAlertDeadline = System.currentTimeMillis() + SETTLE_MS;
-        mDeferUntil = System.currentTimeMillis() + DEFER_MS;
         if (!mAlertPending) {
             mAlertPending = true;
             // 이미 값이 있으면 스캔도 대기도 없이 바로 띄운다 (루틴에서 부를 때 즉시 반응 + 스캔 0회)
@@ -734,77 +648,50 @@ public class PodsService extends Service {
             DiagLog.add(this, "gave up: " + (mMaybeConnected ? "no battery value in 30s" : "not connected"));
             mShowWhat = 0;
             mShowFreshOnly = false;
-            stopLaterIfOnDemand();
+            stopLater(0);
             return;
         }
-        // 아일랜드를 먼저 띄운다. 일반 오버레이는 잠금 화면에 가려지니 잠금이 풀린 뒤에만,
-        // 접근성 오버레이는 잠금 화면 위에도 보이니 화면만 켜져 있으면 바로.
-        android.os.PowerManager pmgr = getSystemService(android.os.PowerManager.class);
-        boolean screenOn = pmgr == null || pmgr.isInteractive();
+        // 아일랜드를 먼저 띄운다. 접근성 오버레이는 잠금 화면 위에도 보이니 화면만 켜져 있으면 바로 띄우고,
+        // 화면이 꺼져 있으면 접근성 서비스에 넘긴다 (화면이 켜지는 순간 그쪽이 띄운다 — 이 서비스는 기다리지 않는다).
+        android.os.PowerManager pm = getSystemService(android.os.PowerManager.class);
+        boolean screenOn = pm == null || pm.isInteractive();
         boolean islandShown = false;
         if ((mShowWhat & SHOW_ISLAND) != 0) {
-            if (isInteractive() || (screenOn && IslandOverlay.canShowOnLockScreen())) {
+            if (!IslandA11yService.isRunning()) {
+                DiagLog.add(this, "island skipped: accessibility off");
+            } else if (screenOn) {
                 islandShown = IslandOverlay.show(this, s);
-                DiagLog.add(this, islandShown
-                        ? "island shown" + (IslandOverlay.canShowOnLockScreen() ? " (accessibility)" : " (overlay)")
-                        : "island failed: " + IslandOverlay.lastFailure);
-                if (islandShown)
-                    mShowWhat &= ~SHOW_ISLAND;
-            } else {
-                DiagLog.add(this, screenOn ? "island waiting: lock screen" : "island waiting: screen off");
+                DiagLog.add(this, islandShown ? "island shown" : "island failed: " + IslandOverlay.lastFailure);
+            } else if (IslandA11yService.deferIsland(System.currentTimeMillis() + DEFER_MS)) {
+                DiagLog.add(this, "island handed to accessibility: waits for screen on");
             }
         }
         // 알림은 알림함에 남으니 화면이 꺼져 있어도 지금 띄운다.
-        // 단 아일랜드를 띄웠다면 헤즈업 배너가 화면 상단에서 아일랜드를 덮으므로 배너 없이 넣는다.
+        // 아일랜드를 띄웠다면 같은 내용의 헤즈업 배너는 중복이라 배너 없이 넣는다.
         if ((mShowWhat & SHOW_NOTIF) != 0) {
             showWearAlert(wearBody(s), islandShown);
             DiagLog.add(this, "notification posted" + (islandShown ? " (no banner)" : ""));
-            mShowWhat &= ~SHOW_NOTIF;
         }
-        // 화면이 꺼져 있어 못 띄운 아일랜드: 접근성 서비스가 켜져 있으면 거기에 넘기고 이 서비스는 바로 접는다
-        // (포그라운드 서비스·제어 채널을 화면이 켜질 때까지 붙잡아 두지 않는다)
-        if ((mShowWhat & SHOW_ISLAND) != 0 && !screenOn && System.currentTimeMillis() < mDeferUntil
-                && IslandA11yService.deferIsland(mDeferUntil)) {
-            DiagLog.add(this, "island handed to accessibility: waits for screen on");
-            mShowWhat &= ~SHOW_ISLAND;
-        }
-        // 그 밖에 못 띄운 아일랜드는 이 서비스가 화면을 켤 때까지 보류
-        if ((mShowWhat & SHOW_ISLAND) != 0) {
-            if (System.currentTimeMillis() < mDeferUntil) {
-                stopScanner(); // 기다리는 동안 스캔은 하지 않는다
-                mAlertPending = true;
-                // 화면이 켜져 있는데 잠금 화면이면 잠금이 풀리는 순간을 놓치지 않게 1초마다 다시 본다.
-                // (잠금 해제 신호를 받은 순간에도 잠금 화면이 아직 걷히는 중이라 "잠김"으로 보일 수 있다.)
-                // 화면이 꺼져 있으면 화면 켜짐 리시버가 깨우므로 30초 간격으로만.
-                mHandler.postDelayed(mFireShow, screenOn ? 1000 : 30000);
-                return;
-            }
-            DiagLog.add(this, "island dropped: not shown within 10 min");
-            mShowWhat = 0;
-        }
+        mShowWhat = 0;
         mShowFreshOnly = false;
-        // 접근성 서비스가 프로세스를 살려 두고 아일랜드 창도 그쪽에 붙어 있으니, 떠 있는 동안 버틸 필요가 없다
-        stopLaterIfOnDemand(IslandA11yService.isRunning() ? 0 : IslandOverlay.showMs(this) + 1500);
+        // 아일랜드 창은 접근성 서비스 쪽에 붙어 있어 이 서비스가 떠 있을 필요가 없다 — 바로 접는다
+        stopLater(0);
     }
 
     /**
-     * 온디맨드 모드: 보여줄 걸 다 보여줬으면 서비스를 완전히 종료한다.
+     * 보여줄 걸 다 보여줬으면 서비스를 완전히 종료한다.
      * 이후엔 에어팟 재연결 / 바로가기(루틴) / 앱·위젯 열기 때만 잠깐 다시 뜬다.
      */
-    private void stopLaterIfOnDemand() {
-        stopLaterIfOnDemand(IslandOverlay.showMs(this) + 1500);
-    }
-
-    private void stopLaterIfOnDemand(long delayMs) {
-        if (!isOnDemandEnabled(this) || sAppForeground > 0)
+    private void stopLater(long delayMs) {
+        if (sAppForeground > 0)
             return;
         mHandler.removeCallbacks(mStopIfDone);
         mHandler.postDelayed(mStopIfDone, delayMs);
     }
 
     private final Runnable mStopIfDone = () -> {
-        if (isOnDemandEnabled(this) && sAppForeground == 0 && !mAlertPending && mShowWhat == 0) {
-            DiagLog.add(this, "service stopped (on-demand)");
+        if (sAppForeground == 0 && !mAlertPending && mShowWhat == 0) {
+            DiagLog.add(this, "service stopped");
             stopSelf();
         }
     };
@@ -876,11 +763,8 @@ public class PodsService extends Service {
         return id;
     }
 
+    // 몇 초만 떠 있는 포그라운드 서비스 알림 — 배터리 값은 배터리 알림/아일랜드가 보여준다
     private Notification buildFgNotification() {
-        PodsSnapshot s = PodsSnapshot.last;
-        if (mMaybeConnected && s.available && isPersistentNotificationEnabled(this))
-            return mBuilder.build(s);
-
         return new NotificationCompat.Builder(this, TAG)
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(getString(R.string.bg_noti_title))

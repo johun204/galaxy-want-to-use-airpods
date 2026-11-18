@@ -6,7 +6,6 @@ import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
-import android.provider.Settings;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -45,13 +44,8 @@ public final class IslandOverlay {
     private IslandOverlay() {
     }
 
-    /** '다른 앱 위에 표시' 권한이 있거나 접근성 서비스가 켜져 있으면 띄울 수 있다 */
-    public static boolean hasPermission(Context c) {
-        return IslandA11yService.isRunning() || Settings.canDrawOverlays(c);
-    }
-
-    /** 잠금 화면 위에도 띄울 수 있는가 — 접근성 오버레이만 잠금 화면에 가려지지 않는다 */
-    public static boolean canShowOnLockScreen() {
+    /** 아일랜드는 접근성 서비스가 켜져 있어야 띄울 수 있다 */
+    public static boolean hasPermission() {
         return IslandA11yService.isRunning();
     }
 
@@ -63,15 +57,11 @@ public final class IslandOverlay {
     /** @return 실제로 화면에 붙였으면 true */
     public static boolean show(Context ctx, PodsSnapshot s) {
         Context app = ctx.getApplicationContext();
-        // 접근성 서비스가 켜져 있으면 그 창 관리자로 접근성 오버레이 층에 붙인다
+        // 접근성 서비스의 창 관리자로 접근성 오버레이 층에 붙인다 (잠금 화면·알림 배너보다 위)
         Context host = IslandA11yService.instance();
-        boolean a11y = host != null;
-        if (!a11y) {
-            host = app;
-            if (!Settings.canDrawOverlays(app)) {
-                lastFailure = "no overlay permission";
-                return false;
-            }
+        if (host == null) {
+            lastFailure = "accessibility off";
+            return false;
         }
         if (!s.available) {
             lastFailure = "no battery data";
@@ -92,8 +82,7 @@ public final class IslandOverlay {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                     WindowManager.LayoutParams.WRAP_CONTENT,
                     WindowManager.LayoutParams.WRAP_CONTENT,
-                    a11y ? WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-                            : WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                             | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                             // 상태바 영역까지 올라가도록 (펀치홀 카메라와 겹침).
@@ -149,7 +138,7 @@ public final class IslandOverlay {
             return true;
         } catch (Throwable t) {
             Logger.error(t);
-            lastFailure = (a11y ? "a11y " : "") + t.getClass().getSimpleName() + ": " + t.getMessage();
+            lastFailure = t.getClass().getSimpleName() + ": " + t.getMessage();
             return false;
         }
     }

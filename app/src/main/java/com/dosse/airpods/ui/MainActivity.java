@@ -22,7 +22,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.preference.PreferenceManager;
 
 import com.dosse.airpods.R;
 import com.dosse.airpods.pods.AacpManager;
@@ -90,8 +89,8 @@ public class MainActivity extends AppCompatActivity {
             warn.setVisibility(PermissionUtils.checkAllPermissions(this) ? View.GONE : View.VISIBLE);
 
         render(); // 브로드캐스트를 기다리지 않고 마지막 스냅샷을 즉시 반영
-        if (!maybeAskBluetooth()) // 블루투스 안내가 떴으면 오버레이 안내는 다음 기회에
-            maybeAskOverlay();
+        if (!maybeAskBluetooth()) // 블루투스 안내가 떴으면 접근성 안내는 다음 기회에
+            maybeAskAccessibility();
     }
 
     /**
@@ -127,19 +126,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // 아일랜드가 켜져 있는데 '다른 앱 위에 표시' 권한이 없으면 한 번만 물어본다
-    private void maybeAskOverlay() {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        if (!SharedPreferencesUtils.isIslandEnabled(this) || IslandOverlay.hasPermission(this)
-                || sp.getBoolean("island_asked", false))
+    // 아일랜드는 접근성 서비스로만 띄운다 — 켜져 있지 않으면 열 때마다 안내한다
+    private void maybeAskAccessibility() {
+        if (!SharedPreferencesUtils.isIslandEnabled(this) || IslandOverlay.hasPermission())
             return;
-        sp.edit().putBoolean("island_asked", true).apply();
         new androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle(R.string.pref_island)
-                .setMessage(R.string.pref_island_desc)
-                .setPositiveButton(R.string.pref_island_permission, (d, w) -> startActivity(
-                        new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                android.net.Uri.parse("package:" + getPackageName()))))
+                .setTitle(R.string.a11y_ask_title)
+                .setMessage(R.string.a11y_ask_msg)
+                .setPositiveButton(R.string.a11y_ask_open, (d, w) -> startActivity(
+                        new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS)))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }

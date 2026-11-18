@@ -5,7 +5,6 @@
     <color name="colorAccent"      >#448AFF</color>
 
     <color name="textColorPrimary" >@android:color/primary_text_dark</color>
-    <color name="bgColorPrimary"   >#000</color>
 
     <color name="dgrey"            >@android:color/darker_gray</color>
 </resources>
